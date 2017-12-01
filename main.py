@@ -5,6 +5,7 @@ import time
 
 substractor = None
 
+
 def scale_image(img, factor):
     height, width = img.shape[:2]
     scaledw = int(width * factor)
@@ -13,7 +14,7 @@ def scale_image(img, factor):
 
 
 def print_stats(img, w, h, start):
-    fps = 1/(time.time() - start)
+    fps = cv2.getTickFrequency()/(cv2.getTickCount() - start)
     stats = "FPS: {0}\nResolution: {1}x{2}".format(fps, w, h)
     font = cv2.FONT_HERSHEY_PLAIN
     for i, line in enumerate(stats.split('\n')):
@@ -45,7 +46,10 @@ def background_MOG(foreground):
         substractor = cv2.bgsegm.createBackgroundSubtractorMOG(200, 5, 0.7, 0)
 
     fgmask = substractor.apply(foreground)
-    return fgmask
+
+    kernel = np.ones((3, 3), np.uint8)
+    closed = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
+    return closed
 
 
 def background_MOG2(foreground):
@@ -54,7 +58,10 @@ def background_MOG2(foreground):
         substractor = cv2.createBackgroundSubtractorMOG2(500, 50, False)
 
     fgmask = substractor.apply(foreground)
-    return fgmask
+
+    kernel = np.ones((4, 4), np.uint8)
+    closed = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
+    return closed
 
 
 def background_KNN(foreground):
@@ -63,7 +70,10 @@ def background_KNN(foreground):
         substractor = cv2.createBackgroundSubtractorKNN(500, 400, False)
 
     fgmask = substractor.apply(foreground)
-    return fgmask
+
+    kernel = np.ones((4, 4), np.uint8)
+    closed = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
+    return closed
 
 
 def sub_background(foreground, scale, method):
@@ -101,7 +111,7 @@ def main():
         print sys.argv[1] + " couldn't be opened."
 
     while cap.isOpened():
-        start = time.time()
+        start = cv2.getTickCount()
 
         # read frame
         ret, frame = cap.read()
