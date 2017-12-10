@@ -1,9 +1,9 @@
 import numpy as np
 import cv2
 import sys
-import time
+import objectdetection
 
-substractor = None
+substractor = objectdetection.MOGSubtractor(200, 5, 0.7, 0)
 
 
 def scale_image(img, factor):
@@ -80,7 +80,7 @@ def sub_background(foreground, scale, method):
     if method == "resta":
         return background_difference(foreground, scale)
     elif method == "MOG":
-        return background_MOG(foreground)
+        return substractor.apply(foreground)
     elif method == "MOG2":
         return background_MOG2(foreground)
     else:
