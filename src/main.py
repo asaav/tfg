@@ -124,6 +124,7 @@ def main():
             processed = sub_background(frame, scale, method)
 
             draw_contours(frame, processed)
+
             # add stats
             processed = print_stats(processed, width, height, start)
 
