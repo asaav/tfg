@@ -14,8 +14,8 @@ class Subtractor (object):
 class MOGSubtractor (Subtractor):
     sub = None
 
-    def __init__(self, history=None, nmixtures=None, backgroundRatio=None, noiseSigma=None):
-        self.sub = cv2.bgsegm.createBackgroundSubtractorMOG(history, nmixtures, backgroundRatio, noiseSigma)
+    def __init__(self, history=None, nmixtures=None, backgroundratio=None, noisesigma=None):
+        self.sub = cv2.bgsegm.createBackgroundSubtractorMOG(history, nmixtures, backgroundratio, noisesigma)
 
     def apply(self, image):
         if self.sub:
@@ -29,8 +29,8 @@ class MOGSubtractor (Subtractor):
 class MOG2Subtractor (Subtractor):
     sub = None
 
-    def __init__(self, history=None, varThreshold=None, detectShadows=None):
-        self.sub = cv2.createBackgroundSubtractorMOG2(history, varThreshold, detectShadows)
+    def __init__(self, history=None, varthreshold=None, detectshadows=None):
+        self.sub = cv2.createBackgroundSubtractorMOG2(history, varthreshold, detectshadows)
 
     def apply(self, image):
         if self.sub:
@@ -44,8 +44,8 @@ class MOG2Subtractor (Subtractor):
 class KNNSubtractor (Subtractor):
     sub = None
 
-    def __init__(self, history=None, dist2Threshold=None, detectShadows=None):
-        self.sub = cv2.createBackgroundSubtractorKNN(history, dist2Threshold, detectShadows)
+    def __init__(self, history=None, dist2threshold=None, detectshadows=None):
+        self.sub = cv2.createBackgroundSubtractorKNN(history, dist2threshold, detectshadows)
 
     def apply(self, image):
         if self.sub:
@@ -75,17 +75,3 @@ class DifferenceSubtractor (Subtractor):
         closed = cv2.morphologyEx(erode, cv2.MORPH_CLOSE, kernel)
 
         return closed
-
-
-class SubtractorFactory:
-    def get_person(self, kind, arg1=None, arg2=None, arg3=None, arg4=None):
-        if kind == "resta":
-            return DifferenceSubtractor(arg1)
-        elif kind == "MOG":
-            return MOGSubtractor(arg1, arg2, arg3, arg4)
-        elif kind == "MOG2":
-            return MOG2Subtractor(arg1, arg2, arg3)
-        elif kind == "KNN":
-            return KNNSubtractor(arg1, arg2, arg3)
-        else:
-            raise NotImplementedError("Unknown person type.")

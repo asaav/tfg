@@ -1,9 +1,7 @@
 import numpy as np
 import cv2
 import sys
-import objectdetection
-
-substractor = objectdetection.MOGSubtractor(200, 5, 0.7, 0)
+from objectdetection import MOG2Subtractor, MOGSubtractor, KNNSubtractor, DifferenceSubtractor
 
 
 def scale_image(img, factor):
@@ -23,68 +21,17 @@ def print_stats(img, w, h, start):
     return img
 
 
-def background_difference(foreground, scale):
-    background = cv2.imread('background.jpg', 0)
-    background, w, h = scale_image(background, scale)
-
-    grey = cv2.cvtColor(foreground, cv2.COLOR_RGB2GRAY)
-
-    difference = cv2.absdiff(grey, background)
-    thresh = cv2.threshold(difference, 25, 255, cv2.THRESH_BINARY)[1]
-
-    kernel = np.ones((2, 2), np.uint8)
-    erode = cv2.erode(thresh, kernel, iterations=1)
-    kernel = np.ones((3, 3), np.uint8)
-    closed = cv2.morphologyEx(erode, cv2.MORPH_CLOSE, kernel)
-
-    return closed
-
-
-def background_MOG(foreground):
-    global substractor
-    if not substractor:
-        substractor = cv2.bgsegm.createBackgroundSubtractorMOG(200, 5, 0.7, 0)
-
-    fgmask = substractor.apply(foreground)
-
-    kernel = np.ones((3, 3), np.uint8)
-    closed = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
-    return closed
-
-
-def background_MOG2(foreground):
-    global substractor
-    if not substractor:
-        substractor = cv2.createBackgroundSubtractorMOG2(500, 50, False)
-
-    fgmask = substractor.apply(foreground)
-
-    kernel = np.ones((4, 4), np.uint8)
-    closed = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
-    return closed
-
-
-def background_KNN(foreground):
-    global substractor
-    if not substractor:
-        substractor = cv2.createBackgroundSubtractorKNN(500, 400, False)
-
-    fgmask = substractor.apply(foreground)
-
-    kernel = np.ones((4, 4), np.uint8)
-    closed = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
-    return closed
-
-
-def sub_background(foreground, scale, method):
+def create_subtractor(scale, method):
     if method == "resta":
-        return background_difference(foreground, scale)
+        background = cv2.imread('background.jpg', 0)
+        background, w, h = scale_image(background, scale)
+        return DifferenceSubtractor(background)
     elif method == "MOG":
-        return substractor.apply(foreground)
+        return MOGSubtractor(200, 5, 0.7, 0)
     elif method == "MOG2":
-        return background_MOG2(foreground)
+        return MOG2Subtractor(500, 50, True)
     else:
-        return background_KNN(foreground)
+        return KNNSubtractor(500, 400, False)
 
 
 def draw_contours(img, thresh):
@@ -104,8 +51,10 @@ def main():
     if len(sys.argv) > 3:
         method = sys.argv[3]
     else:
-        method = "resta"
+        method = "MOG2"
     cap = cv2.VideoCapture(video)
+
+    subtractor = create_subtractor(scale, method)
 
     if not cap.isOpened():
         print sys.argv[1] + " couldn't be opened."
@@ -121,7 +70,7 @@ def main():
             frame, width, height = scale_image(frame, scale)
 
             # operate with frame
-            processed = sub_background(frame, scale, method)
+            processed = subtractor.apply(frame)
 
             draw_contours(frame, processed)
 
