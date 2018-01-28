@@ -12,7 +12,7 @@ def scale_image(img, factor):
 
 
 def print_stats(img, w, h, start):
-    fps = cv2.getTickFrequency()/(cv2.getTickCount() - start)
+    fps = cv2.getTickFrequency() / (cv2.getTickCount() - start)
     stats = "FPS: {0}\nResolution: {1}x{2}".format(fps, w, h)
     font = cv2.FONT_HERSHEY_PLAIN
     for i, line in enumerate(stats.split('\n')):
@@ -45,6 +45,16 @@ def draw_contours(img, thresh):
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
 
+def init_trackers(rois, frame):
+    trackers = []
+    for roi in rois:
+        tracker = cv2.TrackerMIL_create()
+        tracker.init(frame, (roi[0], roi[1], roi[2], roi[3]))
+        trackers.append(tracker)
+
+    return trackers
+
+
 def main():
     video = sys.argv[1]
     scale = float(sys.argv[2])
@@ -53,7 +63,7 @@ def main():
     else:
         method = "MOG2"
     cap = cv2.VideoCapture(video)
-
+    trackers = []
     subtractor = create_subtractor(scale, method)
 
     if not cap.isOpened():
@@ -68,9 +78,21 @@ def main():
         if ret:
             # scale image
             frame, width, height = scale_image(frame, scale)
+            raw_frame = frame.copy()
 
-            # operate with frame
-            processed = subtractor.apply(frame)
+            # operate with frame (tracking and subtraction)
+            if len(trackers) > 0:
+                for t in trackers:
+                    ok, bbox = t.update(raw_frame)
+                    if ok:
+                        p1 = (int(bbox[0]), int(bbox[1]))
+                        p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+                        cv2.rectangle(frame, p1, p2, (0, 0, 255), 2)
+                    else:
+                        # Tracking failure
+                        cv2.putText(frame, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                                    (0, 0, 255), 2)
+            processed = subtractor.apply(raw_frame)
 
             draw_contours(frame, processed)
 
@@ -81,8 +103,14 @@ def main():
             cv2.imshow('original', frame)
 
         # end video if q is pressed or no frame was read
-        if (cv2.waitKey(30) & 0xFF == ord('q')) or (not ret):
+        key = cv2.waitKey(5)
+        if (key == ord('q')) or (not ret):
             break
+        elif (key & 0xFF) == ord('t'):
+            winname = "Roi selection"
+            rois = cv2.selectROIs(winname, img=raw_frame, fromCenter=False)
+            trackers = init_trackers(rois, raw_frame)
+            cv2.destroyWindow(winname)
 
     cap.release()
     cv2.destroyAllWindows()
