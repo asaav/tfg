@@ -1,6 +1,5 @@
-import numpy as np
-import cv2
 import sys
+import cv2
 from objectdetection import MOG2Subtractor, MOGSubtractor, KNNSubtractor, DifferenceSubtractor
 
 
@@ -56,6 +55,11 @@ def init_trackers(rois, frame):
 
 
 def main():
+    if len(sys.argv) < 2:
+        print("Incorrect number of arguments.\nUsage: main.py <videofile.mp4> <scale factor> <subtraction method>",
+              file=sys.stderr)
+        exit(1)
+
     video = sys.argv[1]
     scale = float(sys.argv[2])
     if len(sys.argv) > 3:
@@ -67,7 +71,9 @@ def main():
     subtractor = create_subtractor(scale, method)
 
     if not cap.isOpened():
-        print sys.argv[1] + " couldn't be opened."
+        print(sys.argv[1] + " couldn't be opened.",
+              file=sys.stderr)
+        exit(1)
 
     while cap.isOpened():
         start = cv2.getTickCount()
@@ -106,6 +112,7 @@ def main():
         key = cv2.waitKey(5)
         if (key == ord('q')) or (not ret):
             break
+        # if t is pressed, open window to select roi
         elif (key & 0xFF) == ord('t'):
             winname = "Roi selection"
             rois = cv2.selectROIs(winname, img=raw_frame, fromCenter=False)
