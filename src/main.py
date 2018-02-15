@@ -1,5 +1,6 @@
 import sys
 import cv2
+import numpy as np
 from objectdetection import MOG2Subtractor, MOGSubtractor, KNNSubtractor, DifferenceSubtractor
 
 
@@ -37,11 +38,22 @@ def draw_contours(img, thresh):
     contoursim = thresh.copy()
     im, contours, hierarchy = cv2.findContours(contoursim, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+    roundness = []
     for c in contours:
         if cv2.contourArea(c) < 100:
+            roundness.append(0)
+        else:
+            roundness.append(4*np.pi*cv2.contourArea(c)/cv2.arcLength(c, 1)**2)
+
+    for index, c in enumerate(contours):
+        if cv2.contourArea(c) < 100:
             continue
-        (x, y, w, h) = cv2.boundingRect(c)
-        cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        if index == np.argmax(roundness) and np.max(roundness) > 0.45:
+            (x, y, w, h) = cv2.boundingRect(c)
+            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
+        else:
+            (x, y, w, h) = cv2.boundingRect(c)
+            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
 
 def init_trackers(rois, frame):
