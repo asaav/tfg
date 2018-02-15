@@ -47,7 +47,7 @@ def draw_contours(img, thresh):
 def init_trackers(rois, frame):
     trackers = []
     for roi in rois:
-        tracker = cv2.TrackerMIL_create()
+        tracker = cv2.TrackerTLD_create()
         tracker.init(frame, (roi[0], roi[1], roi[2], roi[3]))
         trackers.append(tracker)
 
@@ -75,49 +75,63 @@ def main():
               file=sys.stderr)
         exit(1)
 
+    play_video = True
+
     while cap.isOpened():
-        start = cv2.getTickCount()
+        if play_video:
+            start = cv2.getTickCount()
 
-        # read frame
-        ret, frame = cap.read()
+            # read frame
+            ret, frame = cap.read()
 
-        if ret:
-            # scale image
-            frame, width, height = scale_image(frame, scale)
-            raw_frame = frame.copy()
+            if ret:
+                # scale image
+                frame, width, height = scale_image(frame, scale)
+                raw_frame = frame.copy()
 
-            # operate with frame (tracking and subtraction)
-            if len(trackers) > 0:
-                for t in trackers:
-                    ok, bbox = t.update(raw_frame)
-                    if ok:
-                        p1 = (int(bbox[0]), int(bbox[1]))
-                        p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-                        cv2.rectangle(frame, p1, p2, (0, 0, 255), 2)
-                    else:
-                        # Tracking failure
-                        cv2.putText(frame, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                                    (0, 0, 255), 2)
-            processed = subtractor.apply(raw_frame)
+                # operate with frame (tracking and subtraction)
+                if len(trackers) > 0:
+                    for t in trackers:
+                        ok, bbox = t.update(raw_frame)
+                        if ok:
+                            p1 = (int(bbox[0]), int(bbox[1]))
+                            p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+                            cv2.rectangle(frame, p1, p2, (0, 0, 255), 2)
+                        else:
+                            # Tracking failure
+                            cv2.putText(frame, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
+                                        (0, 0, 255), 2)
 
-            draw_contours(frame, processed)
+                processed = subtractor.apply(raw_frame)
 
-            # add stats
-            processed = print_stats(processed, width, height, start)
+                draw_contours(frame, processed)
 
-            cv2.imshow('processed', processed)
-            cv2.imshow('original', frame)
+                # add stats
+                processed = print_stats(processed, width, height, start)
+
+                cv2.imshow('processed', processed)
+                cv2.imshow('original', frame)
 
         # end video if q is pressed or no frame was read
         key = cv2.waitKey(5)
         if (key == ord('q')) or (not ret):
             break
         # if t is pressed, open window to select roi
-        elif (key & 0xFF) == ord('t'):
+        elif key == ord('t'):
             winname = "Roi selection"
             rois = cv2.selectROIs(winname, img=raw_frame, fromCenter=False)
             trackers = init_trackers(rois, raw_frame)
             cv2.destroyWindow(winname)
+        # space to pause
+        elif key == ord(' '):
+            play_video = not play_video
+        # j to rewind 5 seconds
+        elif key == ord('j'):
+            time = cap.get(cv2.CAP_PROP_POS_MSEC)
+            cap.set(cv2.CAP_PROP_POS_MSEC, time-5000)
+        elif key == ord('k'):
+            time = cap.get(cv2.CAP_PROP_POS_MSEC)
+            cap.set(cv2.CAP_PROP_POS_MSEC, time+5000)
 
     cap.release()
     cv2.destroyAllWindows()
