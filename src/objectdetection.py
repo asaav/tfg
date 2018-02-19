@@ -3,6 +3,19 @@ import numpy as np
 from abc import ABCMeta, abstractmethod
 
 
+def create_subtractor(scale, method):
+    if method == "resta":
+        background = cv2.imread('background.jpg', 0)
+        background, w, h = scale_image(background, scale)
+        return DifferenceSubtractor(background)
+    elif method == "MOG":
+        return MOGSubtractor(200, 5, 0.7, 0)
+    elif method == "MOG2":
+        return MOG2Subtractor(500, 50, True)
+    else:
+        return KNNSubtractor(500, 400, False)
+
+
 class Subtractor (object):
     __metaclass__ = ABCMeta
 

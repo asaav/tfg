@@ -1,7 +1,15 @@
+import argparse
 import sys
 import cv2
 import numpy as np
-from objectdetection import MOG2Subtractor, MOGSubtractor, KNNSubtractor, DifferenceSubtractor
+from objectdetection import create_subtractor
+
+
+def restricted_float(x):
+    x = float(x)
+    if x < 0.0 or x > 1.0:
+        raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]" % (x,))
+    return x
 
 
 def scale_image(img, factor):
@@ -19,19 +27,6 @@ def print_stats(img, w, h, start):
         cv2.putText(img, line, (10, 20+15*i), font, 0.8, (255, 255, 255))
 
     return img
-
-
-def create_subtractor(scale, method):
-    if method == "resta":
-        background = cv2.imread('background.jpg', 0)
-        background, w, h = scale_image(background, scale)
-        return DifferenceSubtractor(background)
-    elif method == "MOG":
-        return MOGSubtractor(200, 5, 0.7, 0)
-    elif method == "MOG2":
-        return MOG2Subtractor(500, 50, True)
-    else:
-        return KNNSubtractor(500, 400, False)
 
 
 def draw_contours(img, thresh):
@@ -67,20 +62,15 @@ def init_trackers(rois, frame):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Incorrect number of arguments.\nUsage: main.py <videofile.mp4> <scale factor> <subtraction method>",
-              file=sys.stderr)
-        exit(1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("video", help="video to be processed")
+    parser.add_argument("-s", "--scale", type=restricted_float, help="reduction factor")
+    parser.add_argument("-m", "--method", choices=['resta', 'MOG2', 'MOG', 'KNN'], default='MOG2')
+    args = parser.parse_args()
 
-    video = sys.argv[1]
-    scale = float(sys.argv[2])
-    if len(sys.argv) > 3:
-        method = sys.argv[3]
-    else:
-        method = "MOG2"
-    cap = cv2.VideoCapture(video)
+    cap = cv2.VideoCapture(args.video)
     trackers = []
-    subtractor = create_subtractor(scale, method)
+    subtractor = create_subtractor(args.scale, args.method)
 
     if not cap.isOpened():
         print(sys.argv[1] + " couldn't be opened.",
@@ -98,7 +88,7 @@ def main():
 
             if ret:
                 # scale image
-                frame, width, height = scale_image(frame, scale)
+                frame, width, height = scale_image(frame, args.scale)
                 raw_frame = frame.copy()
 
                 # operate with frame (tracking and subtraction)
