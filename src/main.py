@@ -3,6 +3,7 @@ import sys
 import cv2
 import numpy as np
 from objectdetection import create_subtractor
+from tracking import create_tracker
 
 
 def restricted_float(x):
@@ -51,11 +52,10 @@ def draw_contours(img, thresh):
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
 
-def init_trackers(rois, frame):
+def init_trackers(rois, frame, method):
     trackers = []
     for roi in rois:
-        tracker = cv2.TrackerTLD_create()
-        tracker.init(frame, (roi[0], roi[1], roi[2], roi[3]))
+        tracker = create_tracker(method, roi, frame)
         trackers.append(tracker)
 
     return trackers
@@ -66,6 +66,7 @@ def main():
     parser.add_argument("video", help="video to be processed")
     parser.add_argument("-s", "--scale", type=restricted_float, help="reduction factor")
     parser.add_argument("-m", "--method", choices=['resta', 'MOG2', 'MOG', 'KNN'], default='MOG2')
+    parser.add_argument("-t", "--tracker", choices=['meanshift', 'camshift'])
     args = parser.parse_args()
 
     cap = cv2.VideoCapture(args.video)
@@ -78,6 +79,8 @@ def main():
         exit(1)
 
     play_video = True
+    ret = None
+    raw_frame = None
 
     while cap.isOpened():
         if play_video:
@@ -93,16 +96,9 @@ def main():
 
                 # operate with frame (tracking and subtraction)
                 if len(trackers) > 0:
+
                     for t in trackers:
-                        ok, bbox = t.update(raw_frame)
-                        if ok:
-                            p1 = (int(bbox[0]), int(bbox[1]))
-                            p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-                            cv2.rectangle(frame, p1, p2, (0, 0, 255), 2)
-                        else:
-                            # Tracking failure
-                            cv2.putText(frame, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75,
-                                        (0, 0, 255), 2)
+                        t.update(raw_frame, frame)
 
                 processed = subtractor.apply(raw_frame)
 
@@ -122,7 +118,7 @@ def main():
         elif key == ord('t'):
             winname = "Roi selection"
             rois = cv2.selectROIs(winname, img=raw_frame, fromCenter=False)
-            trackers = init_trackers(rois, raw_frame)
+            trackers = init_trackers(rois, raw_frame, args.tracker)
             cv2.destroyWindow(winname)
         # space to pause
         elif key == ord(' '):

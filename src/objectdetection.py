@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 
 
 def create_subtractor(scale, method):
@@ -16,8 +16,7 @@ def create_subtractor(scale, method):
         return KNNSubtractor(500, 400, False)
 
 
-class Subtractor (object):
-    __metaclass__ = ABCMeta
+class Subtractor (ABC):
 
     @abstractmethod
     def apply(self, image):
