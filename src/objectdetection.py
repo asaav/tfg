@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
+from imageoperations import scale_image
 from abc import ABC, abstractmethod
-from main import scale_image
 
 
 def create_subtractor(scale, method):

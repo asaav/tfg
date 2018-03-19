@@ -1,55 +1,9 @@
-import argparse
 import sys
 import cv2
-import numpy as np
+from imageoperations import scale_image, draw_contours, print_stats
 from objectdetection import create_subtractor
 from tracking import create_tracker
-
-
-def restricted_float(x):
-    x = float(x)
-    if x < 0.0 or x > 1.0:
-        raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]" % (x,))
-    return x
-
-
-def scale_image(img, factor):
-    height, width = img.shape[:2]
-    scaledw = int(width * factor)
-    scaledh = int(height * factor)
-    return cv2.resize(img, (scaledw, scaledh), interpolation=cv2.INTER_CUBIC), scaledw, scaledh
-
-
-def print_stats(img, w, h, start):
-    fps = cv2.getTickFrequency() / (cv2.getTickCount() - start)
-    stats = "FPS: {0}\nResolution: {1}x{2}".format(fps, w, h)
-    font = cv2.FONT_HERSHEY_PLAIN
-    for i, line in enumerate(stats.split('\n')):
-        cv2.putText(img, line, (10, 20+15*i), font, 0.8, (255, 255, 255))
-
-    return img
-
-
-def draw_contours(img, thresh):
-    contoursim = thresh.copy()
-    im, contours, hierarchy = cv2.findContours(contoursim, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-    roundness = []
-    for c in contours:
-        if cv2.contourArea(c) < 100:
-            roundness.append(0)
-        else:
-            roundness.append(4*np.pi*cv2.contourArea(c)/cv2.arcLength(c, 1)**2)
-
-    for index, c in enumerate(contours):
-        if cv2.contourArea(c) < 100:
-            continue
-        if index == np.argmax(roundness) and np.max(roundness) > 0.45:
-            (x, y, w, h) = cv2.boundingRect(c)
-            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
-        else:
-            (x, y, w, h) = cv2.boundingRect(c)
-            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+from comargs import process_args
 
 
 def init_trackers(rois, frame, method):
@@ -62,16 +16,12 @@ def init_trackers(rois, frame, method):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("video", help="video to be processed")
-    parser.add_argument("-s", "--scale", type=restricted_float, help="reduction factor")
-    parser.add_argument("-m", "--method", choices=['resta', 'MOG2', 'MOG', 'KNN'], default='MOG2')
-    parser.add_argument("-t", "--tracker", choices=['meanshift', 'camshift'])
-    args = parser.parse_args()
+
+    args = process_args(sys.argv)
 
     cap = cv2.VideoCapture(args.video)
     trackers = []
-    subtractor = create_subtractor(args.scale, args.method)
+    subtractor = create_subtractor(args.scale, args.backsub)
 
     if not cap.isOpened():
         print(sys.argv[1] + " couldn't be opened.",
