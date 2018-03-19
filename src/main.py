@@ -17,7 +17,7 @@ def init_trackers(rois, frame, method):
 
 def main():
 
-    args = process_args(sys.argv)
+    args = process_args()
 
     cap = cv2.VideoCapture(args.video)
     trackers = []
