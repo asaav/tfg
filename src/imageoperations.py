@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import datetime
 
 
 def scale_image(img, factor):
@@ -9,9 +10,11 @@ def scale_image(img, factor):
     return cv2.resize(img, (scaledw, scaledh), interpolation=cv2.INTER_CUBIC), scaledw, scaledh
 
 
-def print_stats(img, w, h, start):
+def print_stats(img, w, h, start, time, total_time):
     fps = cv2.getTickFrequency() / (cv2.getTickCount() - start)
-    stats = "FPS: {0}\nResolution: {1}x{2}".format(fps, w, h)
+    time = datetime.timedelta(seconds=round(time/1000))
+    total_time = datetime.timedelta(seconds=total_time)
+    stats = "FPS: {0}\nResolution: {1}x{2}\n{3} / {4}".format(fps, w, h, time, total_time)
     font = cv2.FONT_HERSHEY_PLAIN
     for i, line in enumerate(stats.split('\n')):
         cv2.putText(img, line, (10, 20+15*i), font, 0.8, (255, 255, 255))
@@ -81,6 +84,14 @@ def draw_contours(img, thresh):
 
     # Delete contours with area less than 100
     contours = [c for c in contours if cv2.contourArea(c) > 100]
+
+    # Delete contours with height/width more than 5
+    aux = []
+    for c in contours:
+        (x, y, w, h) = cv2.boundingRect(c)
+        if (h/w) < 3:
+            aux.append(c)
+    contours = aux
 
     # Create bounding boxes list with format (x1,y1,x2,y2)
     rects = np.array([cv2.boundingRect(c) for c in contours])

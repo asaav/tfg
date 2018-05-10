@@ -13,6 +13,10 @@
       <option name="ignoredIdentifiers">
         <list>
           <option value="main.substractor" />
+          <option value="PyQt5.QtCore.timeout.connect" />
+          <option value="PyQt5.QtWidgets.clicked.connect" />
+          <option value="PyQt5.QtWidgets.triggered.*" />
+          <option value="PyQt5.QtWidgets.layout.*" />
         </list>
       </option>
     </inspection_tool>

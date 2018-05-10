@@ -20,6 +20,7 @@ def main():
     args = process_args()
 
     cap = cv2.VideoCapture(args.video)
+    video_length = cap.get(cv2.CAP_PROP_FRAME_COUNT)/cap.get(cv2.CAP_PROP_FPS)
     trackers = []
     subtractor = create_subtractor(args.scale, args.backsub)
 
@@ -55,7 +56,7 @@ def main():
                 draw_contours(frame, processed)
 
                 # add stats
-                processed = print_stats(processed, width, height, start)
+                frame = print_stats(frame, width, height, start, cap.get(cv2.CAP_PROP_POS_MSEC), video_length)
 
                 cv2.imshow('processed', processed)
                 cv2.imshow('original', frame)
