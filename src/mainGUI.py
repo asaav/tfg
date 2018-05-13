@@ -9,7 +9,7 @@ from tracking import create_tracker
 
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtWidgets import QWidget, QLabel, QMainWindow, QAction, QFileDialog, QMessageBox, QPushButton, QFormLayout, \
-    QApplication
+    QApplication, QSlider
 
 
 def init_trackers(rois, frame, method):
@@ -24,14 +24,32 @@ def init_trackers(rois, frame, method):
 class VideoCapture(QWidget):
     def __init__(self, filename, parent):
         super(QWidget, self).__init__()
+        self.video_frame = QLabel()
+
+        # Init timer
+        self.timer = QTimer()
+        self.timer.setTimerType(Qt.PreciseTimer)
+        self.timer.timeout.connect(self.nextFrameSlot)
+
+        # Opencv capture and stats
         self.cap = cv2.VideoCapture(str(filename[0]))
         self.length = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.frame_rate = self.cap.get(cv2.CAP_PROP_FPS)
-        self.video_frame = QLabel()
+        self.duration = self.length / self.cap.get(cv2.CAP_PROP_FPS)
+
+        # Program variables
+        self.positionSlider = QSlider(Qt.Horizontal)
+        self.positionSlider.setRange(0, self.duration)
+        self.positionSlider.sliderMoved.connect(self.setPosition)
+        parent.layout.addRow(self.positionSlider)
+
         self.raw_frame = None
         self.trackers = []
         self.subtractor = create_subtractor(0.5, 'MOG2')
         parent.layout.addWidget(self.video_frame)
+
+    def setPosition(self, position):
+        self.cap.set(cv2.CAP_PROP_POS_MSEC, position * 1000)
 
     def init_trackers(self):
         self.timer.stop()
@@ -65,17 +83,16 @@ class VideoCapture(QWidget):
 
             # add stats
             frame = print_stats(frame, width, height, start, self.cap.get(cv2.CAP_PROP_POS_MSEC),
-                                self.length/self.frame_rate)
+                                self.duration)
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
             pix = QPixmap.fromImage(img)
+            self.positionSlider.setValue(int(round(self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000)))
             self.video_frame.setPixmap(pix)
 
     def start(self):
-        self.timer = QTimer()
-        self.timer.setTimerType(Qt.PreciseTimer)
-        self.timer.timeout.connect(self.nextFrameSlot)
+        # Start timer with timeout of 1000/fps ms
         self.timer.start(1000.0/self.frame_rate)
 
     def pause(self):
@@ -84,19 +101,6 @@ class VideoCapture(QWidget):
     def deleteLater(self):
         self.cap.release()
         super(QWidget, self).deleteLater()
-
-
-class VideoDisplayWidget(QWidget):
-    def __init__(self, parent):
-        super(VideoDisplayWidget, self).__init__(parent)
-        self.layout = QFormLayout(self)
-        self.startButton = QPushButton('Start', parent)
-        self.startButton.clicked.connect(parent.startCapture)
-        self.startButton.setFixedWidth(50)
-        self.pauseButton = QPushButton('Pause', parent)
-        self.pauseButton.setFixedWidth(50)
-        self.layout.addRow(self.startButton, self.pauseButton)
-        self.setLayout(self.layout)
 
 
 class ControlWindow(QMainWindow):
@@ -108,44 +112,56 @@ class ControlWindow(QMainWindow):
         self.capture = None
 
         self.isVideoFileLoaded = False
+        self.videoFileName = None
 
-        self.quitAction = QAction("Exit", self)
+        self.quitAction = QAction("Salir", self)
         self.quitAction.setShortcut("Ctrl+Q")
         self.quitAction.triggered.connect(self.closeApplication)
 
-        self.openVideoFile = QAction("Open Video File", self)
+        self.openVideoFile = QAction("Abrir vídeo", self)
         self.openVideoFile.setShortcut("Ctrl+Shift+V")
         self.openVideoFile.triggered.connect(self.loadVideoFile)
 
         self.mainMenu = self.menuBar()
-        self.fileMenu = self.mainMenu.addMenu('File')
+        self.fileMenu = self.mainMenu.addMenu('Archivo')
         self.fileMenu.addAction(self.openVideoFile)
         self.fileMenu.addAction(self.quitAction)
 
-        self.videoDisplayWidget = VideoDisplayWidget(self)
-        self.setCentralWidget(self.videoDisplayWidget)
+        self.wid = QWidget(self)
+        self.setCentralWidget(self.wid)
+        self.layout = QFormLayout(self)
+        self.startButton = QPushButton('Play', self)
+        self.startButton.clicked.connect(self.startCapture)
+        self.startButton.setFixedWidth(50)
+        self.pauseButton = QPushButton('Pause', self)
+        self.pauseButton.setFixedWidth(50)
+
+        self.layout.addRow(self.startButton, self.pauseButton)
+
+        self.wid.setLayout(self.layout)
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent):
         if a0.key() == QtCore.Qt.Key_T:
             if self.capture is not None and self.isVideoFileLoaded:
                 self.capture.init_trackers()
 
+    def setPosition(self, position):
+        self.capture.setPosition(position)
+
     def startCapture(self):
-        if not self.capture and self.isVideoFileLoaded:
-            self.capture = VideoCapture(self.videoFileName, self.videoDisplayWidget)
-            self.videoDisplayWidget.pauseButton.clicked.connect(self.capture.pause)
-        self.capture.start()
+        if self.videoFileName is not None:
+            if not self.capture and self.isVideoFileLoaded:
+                self.capture = VideoCapture(self.videoFileName, self)
+                self.pauseButton.clicked.connect(self.capture.pause)
+            self.capture.start()
 
     def endCapture(self):
         self.capture.deleteLater()
         self.capture = None
 
     def loadVideoFile(self):
-        try:
-            self.videoFileName = QFileDialog.getOpenFileName(self, 'Select a Video File')
-            self.isVideoFileLoaded = True
-        except:
-            print("Please Select a Video File")
+        self.videoFileName = QFileDialog.getOpenFileName(self, 'Select a Video File', filter="Video (*.avi *.mp4)")
+        self.isVideoFileLoaded = True
 
     def closeApplication(self):
         choice = QMessageBox.question(self, 'Message', 'Do you really want to exit?', QMessageBox.Yes | QMessageBox.No)
@@ -156,7 +172,12 @@ class ControlWindow(QMainWindow):
             pass
 
 
+def except_hook(cls, exception, traceback):
+    sys.__excepthook__(cls, exception, traceback)
+
+
 if __name__ == '__main__':
+    sys.excepthook = except_hook
     app = QApplication(sys.argv)
     window = ControlWindow()
     window.show()

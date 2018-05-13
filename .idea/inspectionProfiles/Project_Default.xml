@@ -17,6 +17,7 @@
           <option value="PyQt5.QtWidgets.clicked.connect" />
           <option value="PyQt5.QtWidgets.triggered.*" />
           <option value="PyQt5.QtWidgets.layout.*" />
+          <option value="PyQt5.QtWidgets.sliderMoved.connect" />
         </list>
       </option>
     </inspection_tool>
