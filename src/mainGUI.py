@@ -3,6 +3,7 @@ import cv2
 from PyQt5.QtGui import QImage, QPixmap
 from qtpy import QtCore, QtGui
 
+from comargs import gui_args
 from imageoperations import scale_image, draw_contours, print_stats
 from objectdetection import create_subtractor
 from tracking import create_tracker
@@ -22,9 +23,9 @@ def init_trackers(rois, frame, method):
 
 
 class VideoCapture(QWidget):
-    def __init__(self, filename, parent):
+    def __init__(self, filename, subtraction, scale, tracker_method, parent):
         super(QWidget, self).__init__()
-        self.video_frame = QLabel()
+        self.videoFrame = QLabel()
 
         # Init timer
         self.timer = QTimer()
@@ -36,17 +37,24 @@ class VideoCapture(QWidget):
         self.length = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.frame_rate = self.cap.get(cv2.CAP_PROP_FPS)
         self.duration = self.length / self.cap.get(cv2.CAP_PROP_FPS)
+        self.trackerMethod = tracker_method
+        self.scale = scale
 
         # Program variables
         self.positionSlider = QSlider(Qt.Horizontal)
         self.positionSlider.setRange(0, self.duration)
         self.positionSlider.sliderMoved.connect(self.setPosition)
-        parent.layout.addRow(self.positionSlider)
 
-        self.raw_frame = None
+        self.rawFrame = None
         self.trackers = []
-        self.subtractor = create_subtractor(0.5, 'MOG2')
-        parent.layout.addWidget(self.video_frame)
+        self.subtractor = create_subtractor(self.scale, subtraction)
+
+        self.trackersB = QPushButton('Trackers', self)
+        self.trackersB.setFixedWidth(50)
+        self.trackersB.clicked.connect(self.init_trackers)
+
+        parent.layout.addRow(self.positionSlider, self.trackersB)
+        parent.layout.addRow(self.videoFrame)
 
     def setPosition(self, position):
         self.cap.set(cv2.CAP_PROP_POS_MSEC, position * 1000)
@@ -54,10 +62,10 @@ class VideoCapture(QWidget):
     def init_trackers(self):
         self.timer.stop()
         winname = "Roi selection"
-        rois = cv2.selectROIs(winname, img=self.raw_frame, fromCenter=False)
+        rois = cv2.selectROIs(winname, img=self.rawFrame, fromCenter=False)
         cv2.destroyWindow(winname)
         for roi in rois:
-            tracker = create_tracker('meanshift', roi, self.raw_frame)
+            tracker = create_tracker(self.trackerMethod, roi, self.rawFrame)
             self.trackers.append(tracker)
         self.timer.start()
 
@@ -69,15 +77,15 @@ class VideoCapture(QWidget):
 
         if ret:
             # scale image
-            frame, width, height = scale_image(frame, 0.5)
-            self.raw_frame = frame.copy()
+            frame, width, height = scale_image(frame, self.scale)
+            self.rawFrame = frame.copy()
 
             # operate with frame (tracking and subtraction)
             if len(self.trackers) > 0:
                 for t in self.trackers:
-                    t.update(self.raw_frame, frame)
+                    t.update(self.rawFrame, frame)
 
-            processed = self.subtractor.apply(self.raw_frame)
+            processed = self.subtractor.apply(self.rawFrame)
 
             draw_contours(frame, processed)
 
@@ -89,7 +97,7 @@ class VideoCapture(QWidget):
             img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
             pix = QPixmap.fromImage(img)
             self.positionSlider.setValue(int(round(self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000)))
-            self.video_frame.setPixmap(pix)
+            self.videoFrame.setPixmap(pix)
 
     def start(self):
         # Start timer with timeout of 1000/fps ms
@@ -104,7 +112,7 @@ class VideoCapture(QWidget):
 
 
 class ControlWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, args):
         super(ControlWindow, self).__init__()
         self.setGeometry(50, 50, 800, 600)
         self.setWindowTitle("PyTrack")
@@ -136,12 +144,7 @@ class ControlWindow(QMainWindow):
         self.pauseButton = QPushButton('Pause', self)
         self.pauseButton.setFixedWidth(50)
 
-        self.trackersB = QPushButton('Trackers', self)
-        self.trackersB.setFixedWidth(50)
-        self.trackersB.setEnabled(False)
-
         self.layout.addRow(self.startButton, self.pauseButton)
-        self.layout.addRow(self.trackersB)
 
         self.wid.setLayout(self.layout)
 
@@ -156,11 +159,9 @@ class ControlWindow(QMainWindow):
     def startCapture(self):
         if self.videoFileName is not None:
             if not self.capture and self.isVideoFileLoaded:
-                self.capture = VideoCapture(self.videoFileName, self)
+                self.capture = VideoCapture(self.videoFileName, args.backsub, args.scale, args.tracker, self)
                 self.pauseButton.clicked.connect(self.capture.pause)
             self.capture.start()
-            self.trackersB.clicked.connect(self.capture.init_trackers)
-            self.trackersB.setEnabled(True)
 
     def endCapture(self):
         self.capture.deleteLater()
@@ -184,8 +185,9 @@ def except_hook(cls, exception, traceback):
 
 
 if __name__ == '__main__':
+    args = gui_args()
     sys.excepthook = except_hook
     app = QApplication(sys.argv)
-    window = ControlWindow()
+    window = ControlWindow(args)
     window.show()
     sys.exit(app.exec_())

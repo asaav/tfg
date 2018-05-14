@@ -18,3 +18,14 @@ def process_args():
                         help='tracking method')
 
     return parser.parse_args()
+
+
+def gui_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-s", "--scale", type=restricted_float, help="scale factor", default=1)
+    parser.add_argument("-b", "--backsub", choices=['resta', 'MOG2', 'MOG', 'KNN'], default='MOG2',
+                        help='background subtractor method')
+    parser.add_argument("-t", "--tracker", choices=['meanshift', 'camshift'], default='meanshift',
+                        help='tracking method')
+
+    return parser.parse_args()

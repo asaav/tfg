@@ -85,13 +85,13 @@ def draw_contours(img, thresh):
     # Delete contours with area less than 100
     contours = [c for c in contours if cv2.contourArea(c) > 100]
 
-    # Delete contours with height/width more than 5
-    aux = []
-    for c in contours:
-        (x, y, w, h) = cv2.boundingRect(c)
-        if (h/w) < 3:
-            aux.append(c)
-    contours = aux
+    # Delete contours with height/width more than 3 or width/height more than 2
+    # aux = []
+    # for c in contours:
+    #     (x, y, w, h) = cv2.boundingRect(c)
+    #     if (h/w) < 3 and (w/h) < 2:
+    #         aux.append(c)
+    # contours = aux
 
     # Create bounding boxes list with format (x1,y1,x2,y2)
     rects = np.array([cv2.boundingRect(c) for c in contours])
