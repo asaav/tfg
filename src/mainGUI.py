@@ -136,7 +136,12 @@ class ControlWindow(QMainWindow):
         self.pauseButton = QPushButton('Pause', self)
         self.pauseButton.setFixedWidth(50)
 
+        self.trackersB = QPushButton('Trackers', self)
+        self.trackersB.setFixedWidth(50)
+        self.trackersB.setEnabled(False)
+
         self.layout.addRow(self.startButton, self.pauseButton)
+        self.layout.addRow(self.trackersB)
 
         self.wid.setLayout(self.layout)
 
@@ -154,6 +159,8 @@ class ControlWindow(QMainWindow):
                 self.capture = VideoCapture(self.videoFileName, self)
                 self.pauseButton.clicked.connect(self.capture.pause)
             self.capture.start()
+            self.trackersB.clicked.connect(self.capture.init_trackers)
+            self.trackersB.setEnabled(True)
 
     def endCapture(self):
         self.capture.deleteLater()
