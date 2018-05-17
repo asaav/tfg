@@ -4,7 +4,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from qtpy import QtCore, QtGui
 
 from comargs import gui_args
-from imageoperations import scale_image, draw_contours, print_stats
+from imageoperations import scale_image, draw_contours, print_stats, match_contours, get_contours
 from objectdetection import create_subtractor
 from tracking import create_tracker
 
@@ -53,6 +53,9 @@ class VideoCapture(QWidget):
         self.trackersB.setFixedWidth(50)
         self.trackersB.clicked.connect(self.init_trackers)
 
+        self.last_ids = []
+        self.last_contours = []
+
         parent.layout.addRow(self.positionSlider, self.trackersB)
         parent.layout.addRow(self.videoFrame)
 
@@ -77,21 +80,25 @@ class VideoCapture(QWidget):
 
         if ret:
             # scale image
-            frame, width, height = scale_image(frame, self.scale)
-            self.rawFrame = frame.copy()
+            frame, width, height = scale_image(frame, args.scale)
+            raw_frame = frame.copy()
 
             # operate with frame (tracking and subtraction)
             if len(self.trackers) > 0:
+
                 for t in self.trackers:
-                    t.update(self.rawFrame, frame)
+                    t.update(raw_frame, frame)
 
-            processed = self.subtractor.apply(self.rawFrame)
+            processed = self.subtractor.apply(raw_frame)
 
-            draw_contours(frame, processed)
+            contours = get_contours(processed)
+            cont_ids = match_contours(self.last_contours, contours, self.last_ids)
+            draw_contours(frame, cont_ids, contours)
 
             # add stats
-            frame = print_stats(frame, width, height, start, self.cap.get(cv2.CAP_PROP_POS_MSEC),
-                                self.duration)
+            frame = print_stats(frame, width, height, start, self.cap.get(cv2.CAP_PROP_POS_MSEC), self.duration)
+            self.last_ids = cont_ids
+            self.last_contours = contours
 
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)

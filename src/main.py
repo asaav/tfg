@@ -1,6 +1,6 @@
 import sys
 import cv2
-from imageoperations import scale_image, draw_contours, print_stats
+from imageoperations import scale_image, draw_contours, print_stats, match_contours, get_contours
 from objectdetection import create_subtractor
 from tracking import create_tracker
 from comargs import process_args
@@ -32,6 +32,8 @@ def main():
     play_video = True
     ret = None
     raw_frame = None
+    last_contours = []
+    last_ids = []
 
     while cap.isOpened():
         if play_video:
@@ -53,11 +55,14 @@ def main():
 
                 processed = subtractor.apply(raw_frame)
 
-                draw_contours(frame, processed)
+                contours = get_contours(processed)
+                cont_ids = match_contours(last_contours, contours, last_ids)
+                draw_contours(frame, cont_ids, contours)
 
                 # add stats
                 frame = print_stats(frame, width, height, start, cap.get(cv2.CAP_PROP_POS_MSEC), video_length)
-
+                last_ids = cont_ids
+                last_contours = contours
                 cv2.imshow('processed', processed)
                 cv2.imshow('original', frame)
 
