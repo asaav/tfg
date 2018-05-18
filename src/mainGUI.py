@@ -13,15 +13,6 @@ from PyQt5.QtWidgets import QWidget, QLabel, QMainWindow, QAction, QFileDialog, 
     QApplication, QSlider
 
 
-def init_trackers(rois, frame, method):
-    trackers = []
-    for roi in rois:
-        tracker = create_tracker(method, roi, frame)
-        trackers.append(tracker)
-
-    return trackers
-
-
 class VideoCapture(QWidget):
     def __init__(self, filename, subtraction, scale, tracker_method, parent):
         super(QWidget, self).__init__()
@@ -80,16 +71,15 @@ class VideoCapture(QWidget):
 
         if ret:
             # scale image
-            frame, width, height = scale_image(frame, args.scale)
-            raw_frame = frame.copy()
+            frame, width, height = scale_image(frame, self.scale)
+            self.rawFrame = frame.copy()
 
             # operate with frame (tracking and subtraction)
             if len(self.trackers) > 0:
-
                 for t in self.trackers:
-                    t.update(raw_frame, frame)
+                    t.update(self.rawFrame, frame)
 
-            processed = self.subtractor.apply(raw_frame)
+            processed = self.subtractor.apply(self.rawFrame)
 
             contours = get_contours(processed)
             cont_ids = match_contours(self.last_contours, contours, self.last_ids)
