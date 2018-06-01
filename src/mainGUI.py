@@ -3,7 +3,6 @@ import cv2
 from PyQt5.QtGui import QImage, QPixmap
 from qtpy import QtCore, QtGui, QtWidgets
 
-from comargs import gui_args
 from imageoperations import scale_image, draw_contours, print_stats, match_contours, get_contours
 from objectdetection import create_subtractor
 from tracking import create_tracker
@@ -47,10 +46,10 @@ class VideoCapture(QWidget):
         self.last_ids = []
         self.last_contours = []
 
-        parentLayout.addWidget(self.positionSlider, 1, 2, 1, 4)
+        parentLayout.addWidget(self.positionSlider, 1, 1, 1, 4)
         parentLayout.addWidget(self.trackersB, 1, 0, 1, 1)
         # parentLayout.addRow(self.positionSlider, self.trackersB)
-        parentLayout.addWidget(self.videoFrame, 2, 0, 2, 6)
+        parentLayout.addWidget(self.videoFrame, 2, 0, 2, 4)
         # parentLayout.addRow(self.videoFrame)
 
     def setPosition(self, position):
@@ -93,7 +92,11 @@ class VideoCapture(QWidget):
             self.last_ids = cont_ids
             self.last_contours = contours
 
+            w = self.videoFrame.width()
+            h = self.videoFrame.height()
+
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = cv2.resize(frame, (w, h), interpolation=cv2.INTER_CUBIC)
             img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
             pix = QPixmap.fromImage(img)
             self.positionSlider.setValue(int(round(self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000)))
@@ -273,7 +276,6 @@ def except_hook(cls, exception, traceback):
 
 
 if __name__ == '__main__':
-    args = gui_args()
     sys.excepthook = except_hook
     app = QApplication(sys.argv)
     window = ControlWindow()

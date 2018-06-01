@@ -60,7 +60,7 @@ def print_stats(img, w, h, start, time, total_time):
     stats = "FPS: {0}\nResolution: {1}x{2}\n{3} / {4}".format(fps, w, h, time, total_time)
     font = cv2.FONT_HERSHEY_PLAIN
     for i, line in enumerate(stats.split('\n')):
-        cv2.putText(img, line, (10, 20+15*i), font, 0.8, (255, 255, 255))
+        cv2.putText(img, line, (10, 20+15*i), font, 1, (255, 255, 255))
 
     return img
 
