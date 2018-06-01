@@ -154,7 +154,7 @@ def draw_contours(img, ids, contours):
 
     # Paint rectangles
     for index, c in enumerate(contours):
-        if index == np.argmax(roundness) and np.max(roundness) > 0.45:
+        if index == np.argmax(roundness) and np.max(roundness) > 0.60:
             (x, y, w, h) = cv2.boundingRect(c)
             cv2.putText(img, str(ids[index]), (x, y-5), cv2.FONT_HERSHEY_PLAIN, 0.8, (255, 255, 255))
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)

@@ -1,7 +1,7 @@
 import sys
 import cv2
 from PyQt5.QtGui import QImage, QPixmap
-from qtpy import QtCore, QtGui
+from qtpy import QtCore, QtGui, QtWidgets
 
 from comargs import gui_args
 from imageoperations import scale_image, draw_contours, print_stats, match_contours, get_contours
@@ -9,12 +9,12 @@ from objectdetection import create_subtractor
 from tracking import create_tracker
 
 from PyQt5.QtCore import QTimer, Qt
-from PyQt5.QtWidgets import QWidget, QLabel, QMainWindow, QAction, QFileDialog, QMessageBox, QPushButton, QFormLayout, \
-    QApplication, QSlider
+from PyQt5.QtWidgets import QWidget, QLabel, QMainWindow, QAction, QFileDialog, QMessageBox, QPushButton, QApplication,\
+    QSlider
 
 
 class VideoCapture(QWidget):
-    def __init__(self, filename, subtraction, scale, tracker_method, parent):
+    def __init__(self, filename, subtraction, scale, tracker_method, parentLayout):
         super(QWidget, self).__init__()
         self.videoFrame = QLabel()
 
@@ -47,8 +47,11 @@ class VideoCapture(QWidget):
         self.last_ids = []
         self.last_contours = []
 
-        parent.layout.addRow(self.positionSlider, self.trackersB)
-        parent.layout.addRow(self.videoFrame)
+        parentLayout.addWidget(self.positionSlider, 1, 2, 1, 4)
+        parentLayout.addWidget(self.trackersB, 1, 0, 1, 1)
+        # parentLayout.addRow(self.positionSlider, self.trackersB)
+        parentLayout.addWidget(self.videoFrame, 2, 0, 2, 6)
+        # parentLayout.addRow(self.videoFrame)
 
     def setPosition(self, position):
         self.cap.set(cv2.CAP_PROP_POS_MSEC, position * 1000)
@@ -109,7 +112,7 @@ class VideoCapture(QWidget):
 
 
 class ControlWindow(QMainWindow):
-    def __init__(self, args):
+    def __init__(self):
         super(ControlWindow, self).__init__()
         self.setGeometry(50, 50, 800, 600)
         self.setWindowTitle("PyTrack")
@@ -132,18 +135,9 @@ class ControlWindow(QMainWindow):
         self.fileMenu.addAction(self.openVideoFile)
         self.fileMenu.addAction(self.quitAction)
 
-        self.wid = QWidget(self)
+        self.wid = QWidget()
         self.setCentralWidget(self.wid)
-        self.layout = QFormLayout(self)
-        self.startButton = QPushButton('Play', self)
-        self.startButton.clicked.connect(self.startCapture)
-        self.startButton.setFixedWidth(50)
-        self.pauseButton = QPushButton('Pause', self)
-        self.pauseButton.setFixedWidth(50)
-
-        self.layout.addRow(self.startButton, self.pauseButton)
-
-        self.wid.setLayout(self.layout)
+        self.buildGUI()
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent):
         if a0.key() == QtCore.Qt.Key_T:
@@ -156,7 +150,12 @@ class ControlWindow(QMainWindow):
     def startCapture(self):
         if self.videoFileName is not None:
             if not self.capture and self.isVideoFileLoaded:
-                self.capture = VideoCapture(self.videoFileName, args.backsub, args.scale, args.tracker, self)
+                if self.meanshift.isChecked():
+                    self.capture = VideoCapture(self.videoFileName, self.comboBox.currentText(),
+                                                self.scaleFactor.value(), 'meanshift', self.gridLayout)
+                else:
+                    self.capture = VideoCapture(self.videoFileName, self.comboBox.currentText(),
+                                                self.scaleFactor.value(), 'camshift', self.gridLayout)
                 self.pauseButton.clicked.connect(self.capture.pause)
             self.capture.start()
 
@@ -176,6 +175,98 @@ class ControlWindow(QMainWindow):
         else:
             pass
 
+    # noinspection PyAttributeOutsideInit
+    def buildGUI(self):
+        self.gridLayout = QtWidgets.QGridLayout(self)
+        self.gridLayout.setContentsMargins(10, 25, 10, 10)
+        self.gridLayout.setSpacing(10)
+        self.gridLayout.setObjectName("gridLayout")
+        self.verticalLayout_3 = QtWidgets.QVBoxLayout()
+        self.verticalLayout_3.setSpacing(0)
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.label_2 = QtWidgets.QLabel(self)
+        self.label_2.setText("Método de sustracción de fondo:")
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.label_2.sizePolicy().hasHeightForWidth())
+        self.label_2.setSizePolicy(sizePolicy)
+        self.label_2.setObjectName("label_2")
+        self.verticalLayout_3.addWidget(self.label_2)
+        self.comboBox = QtWidgets.QComboBox(self)
+        self.comboBox.setObjectName("comboBox")
+        self.comboBox.addItem("MOG2")
+        self.comboBox.addItem("MOG")
+        self.comboBox.addItem("KNN")
+        self.comboBox.addItem("resta")
+        self.verticalLayout_3.addWidget(self.comboBox)
+        self.gridLayout.addLayout(self.verticalLayout_3, 0, 3, 1, 1)
+        self.scaleForm = QtWidgets.QVBoxLayout()
+        self.scaleForm.setSpacing(0)
+        self.scaleForm.setObjectName("scaleForm")
+        self.scaleLabel = QtWidgets.QLabel(self)
+        self.scaleLabel.setText("Escalado de imagen:")
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.scaleLabel.sizePolicy().hasHeightForWidth())
+        self.scaleLabel.setSizePolicy(sizePolicy)
+        self.scaleLabel.setObjectName("scaleLabel")
+        self.scaleForm.addWidget(self.scaleLabel)
+        self.scaleFactor = QtWidgets.QDoubleSpinBox(self)
+        self.scaleFactor.setMaximum(1.0)
+        self.scaleFactor.setSingleStep(0.1)
+        self.scaleFactor.setObjectName("scaleFactor")
+        self.scaleFactor.setValue(1.0)
+        self.scaleForm.addWidget(self.scaleFactor)
+        self.gridLayout.addLayout(self.scaleForm, 0, 2, 1, 1)
+        self.pauseButton = QtWidgets.QPushButton(self)
+        self.pauseButton.setText("Pause")
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pauseButton.sizePolicy().hasHeightForWidth())
+        self.pauseButton.setSizePolicy(sizePolicy)
+        self.pauseButton.setMaximumSize(QtCore.QSize(16777215, 50))
+        self.pauseButton.setObjectName("pauseButton")
+        self.gridLayout.addWidget(self.pauseButton, 0, 1, 1, 1)
+        self.startButton = QtWidgets.QPushButton(self)
+        self.startButton.setText("Play")
+        self.startButton.clicked.connect(self.startCapture)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.startButton.sizePolicy().hasHeightForWidth())
+        self.startButton.setSizePolicy(sizePolicy)
+        self.startButton.setMaximumSize(QtCore.QSize(16777215, 50))
+        self.startButton.setObjectName("startButton")
+        self.gridLayout.addWidget(self.startButton, 0, 0, 1, 1)
+        self.groupBox = QtWidgets.QGroupBox(self)
+        self.groupBox.setTitle("Método de tracking")
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.groupBox.sizePolicy().hasHeightForWidth())
+        self.groupBox.setSizePolicy(sizePolicy)
+        self.groupBox.setMinimumSize(QtCore.QSize(0, 65))
+        self.groupBox.setObjectName("groupBox")
+        self.verticalLayoutWidget = QtWidgets.QWidget(self.groupBox)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(0, 10, 141, 50))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.trackerForm = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.trackerForm.setContentsMargins(9, 0, 0, 0)
+        self.trackerForm.setObjectName("trackerForm")
+        self.meanshift = QtWidgets.QRadioButton(self.verticalLayoutWidget)
+        self.meanshift.setText("Meanshift")
+        self.meanshift.click()
+        self.trackerForm.addWidget(self.meanshift)
+        self.camshift = QtWidgets.QRadioButton(self.verticalLayoutWidget)
+        self.camshift.setText("Camshift")
+        self.trackerForm.addWidget(self.camshift)
+        self.gridLayout.addWidget(self.groupBox, 0, 4, 1, 1)
+
+        self.wid.setLayout(self.gridLayout)
+
 
 def except_hook(cls, exception, traceback):
     sys.__excepthook__(cls, exception, traceback)
@@ -185,6 +276,6 @@ if __name__ == '__main__':
     args = gui_args()
     sys.excepthook = except_hook
     app = QApplication(sys.argv)
-    window = ControlWindow(args)
+    window = ControlWindow()
     window.show()
     sys.exit(app.exec_())
