@@ -101,6 +101,8 @@ class VideoCapture(QWidget):
             pix = QPixmap.fromImage(img)
             self.positionSlider.setValue(int(round(self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000)))
             self.videoFrame.setPixmap(pix)
+        else:
+            cv2.imshow('background', self.subtractor.getBackgroundImage())
 
     def start(self):
         # Start timer with timeout of 1000/fps ms
@@ -201,6 +203,9 @@ class ControlWindow(QMainWindow):
         self.comboBox.addItem("MOG2")
         self.comboBox.addItem("MOG")
         self.comboBox.addItem("KNN")
+        self.comboBox.addItem("GMG")
+        self.comboBox.addItem("CNT")
+        self.comboBox.addItem("GSOC")
         self.comboBox.addItem("resta")
         self.verticalLayout_3.addWidget(self.comboBox)
         self.gridLayout.addLayout(self.verticalLayout_3, 0, 3, 1, 1)

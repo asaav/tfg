@@ -43,7 +43,6 @@ def match_contours(last_frame, current_frame, last_ids):
             max_id += 1
             new_ids[i] = max_id
     return new_ids
-# TODO: FALTA ETIQUETAR AQUELLOS CONTORNOS QUE HAN SIDO VISTOS POR PRIMERA VEZ EN ESTE FRAME
 
 
 def scale_image(img, factor):
@@ -136,13 +135,14 @@ def get_contours(subtractor_frame):
 
     # Create bounding boxes list with format (x1,y1,x2,y2)
     rects = np.array([cv2.boundingRect(c) for c in contours])
-    rects[:, 2] += rects[:, 0]  # x2 = x1 + w
-    rects[:, 3] += rects[:, 1]  # y2 = y1 + h
+    if len(rects) > 0:
+        rects[:, 2] += rects[:, 0]  # x2 = x1 + w
+        rects[:, 3] += rects[:, 1]  # y2 = y1 + h
 
-    # Non max suppression
-    boundingBoxes = list(zip(rects, contours))
-    picked = non_max_suppression(boundingBoxes, 0.3)
-    contours = [p[1] for p in picked]
+        # Non max suppression
+        boundingBoxes = list(zip(rects, contours))
+        picked = non_max_suppression(boundingBoxes, 0.3)
+        contours = [p[1] for p in picked]
     return contours
 
 

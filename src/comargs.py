@@ -12,7 +12,8 @@ def process_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("video", help="video to be processed")
     parser.add_argument("-s", "--scale", type=restricted_float, help="scale factor", default=1)
-    parser.add_argument("-b", "--backsub", choices=['resta', 'MOG2', 'MOG', 'KNN'], default='MOG2',
+    parser.add_argument("-b", "--backsub", choices=['resta', 'MOG2', 'MOG', 'KNN', 'CNT', 'GMG', 'GSOC'],
+                        default='MOG2',
                         help='background subtractor method')
     parser.add_argument("-t", "--tracker", choices=['meanshift', 'camshift'], default='meanshift',
                         help='tracking method')
@@ -23,7 +24,8 @@ def process_args():
 def gui_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-s", "--scale", type=restricted_float, help="scale factor", default=1)
-    parser.add_argument("-b", "--backsub", choices=['resta', 'MOG2', 'MOG', 'KNN'], default='MOG2',
+    parser.add_argument("-b", "--backsub", choices=['resta', 'MOG2', 'MOG', 'KNN', 'CNT', 'GMG', 'GSOC'],
+                        default='MOG2',
                         help='background subtractor method')
     parser.add_argument("-t", "--tracker", choices=['meanshift', 'camshift'], default='meanshift',
                         help='tracking method')
