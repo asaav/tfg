@@ -19,6 +19,8 @@
           <option value="PyQt5.QtWidgets.triggered.*" />
           <option value="PyQt5.QtWidgets.layout.*" />
           <option value="PyQt5.QtWidgets.sliderMoved.connect" />
+          <option value="PyQt5.QtWidgets.accepted.*" />
+          <option value="PyQt5.QtWidgets.rejected.connect" />
         </list>
       </option>
     </inspection_tool>

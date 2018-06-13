@@ -56,7 +56,7 @@ def print_stats(img, w, h, start, time, total_time):
     fps = cv2.getTickFrequency() / (cv2.getTickCount() - start)
     time = datetime.timedelta(seconds=round(time/1000))
     total_time = datetime.timedelta(seconds=round(total_time))
-    stats = "FPS: {0}\nResolution: {1}x{2}\n{3} / {4}".format(fps, w, h, time, total_time)
+    stats = "FPS: {0}\nResolution: {1}x{2}\n{3} / {4}\nPress H to get help".format(fps, w, h, time, total_time)
     font = cv2.FONT_HERSHEY_PLAIN
     for i, line in enumerate(stats.split('\n')):
         cv2.putText(img, line, (10, 20+15*i), font, 1, (255, 255, 255))
@@ -129,7 +129,7 @@ def get_contours(subtractor_frame):
     aux = []
     for c in contours:
         (x, y, w, h) = cv2.boundingRect(c)
-        if (h / w) < 3 and (w / h) < 2:
+        if (h / w) < 3:
             aux.append(c)
     contours = aux
 

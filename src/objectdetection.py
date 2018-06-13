@@ -1,18 +1,17 @@
 import cv2
 import numpy as np
-from imageoperations import scale_image
 from abc import ABC, abstractmethod
 
 
-def create_subtractor(scale, method):
+def create_subtractor(method):
     if method == "resta":
-        background = cv2.imread('background.jpg', 0)
-        background, w, h = scale_image(background, scale)
+        background = cv2.imread('backgroundModel1.jpg')
+        background = cv2.GaussianBlur(background, (5, 5), 0)
         return DifferenceSubtractor(background)
     elif method == "MOG":
         return MOGSubtractor(200, 5, 0.7, 0)
     elif method == "MOG2":
-        return MOG2Subtractor(500, 50, True)
+        return MOG2Subtractor(500, 60, True)
     elif method == "GMG":
         return GMGSubtractor()
     elif method == "CNT":
@@ -99,16 +98,21 @@ class MOGSubtractor (Subtractor):
 class MOG2Subtractor (Subtractor):
     sub = None
 
-    def __init__(self, history=None, varthreshold=None, detectshadows=None):
+    def __init__(self, history=500, varthreshold=50, detectshadows=True):
         self.sub = cv2.createBackgroundSubtractorMOG2(history, varthreshold, detectshadows)
 
     def apply(self, image):
         if self.sub:
-            fgmask = self.sub.apply(image)
+            fgmask = self.sub.apply(image, learningRate=0.0005)
 
+            # remove noise
             kernel = np.ones((3, 3), np.uint8)
             closed = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
-            return closed
+
+            # remove shadows
+            thresh = cv2.threshold(closed, 128, 255, cv2.THRESH_BINARY)
+
+            return thresh[1]
 
 
 class KNNSubtractor (Subtractor):
@@ -127,7 +131,6 @@ class KNNSubtractor (Subtractor):
 
 
 class DifferenceSubtractor (Subtractor):
-
     background = None
 
     def __init__(self, background):
@@ -137,14 +140,17 @@ class DifferenceSubtractor (Subtractor):
         return self.background
 
     def apply(self, image):
-        grey = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        # blur image to delete noise
+        image = cv2.GaussianBlur(image, (5, 5), 0)
+        difference = cv2.absdiff(image, self.background)
 
-        difference = cv2.absdiff(grey, self.background)
-        thresh = cv2.threshold(difference, 25, 255, cv2.THRESH_BINARY)[1]
+        lower = (25, 25, 25)
+        upper = (255, 255, 255)
+        thresh = cv2.inRange(difference, lower, upper)
 
-        kernel = np.ones((2, 2), np.uint8)
-        erode = cv2.erode(thresh, kernel, iterations=1)
-        kernel = np.ones((3, 3), np.uint8)
-        closed = cv2.morphologyEx(erode, cv2.MORPH_CLOSE, kernel)
-
-        return closed
+        # kernel = np.ones((3, 3), np.uint8)
+        # thresh = cv2.erode(thresh, kernel, iterations=1)
+        #
+        # kernel = np.ones((3, 3), np.uint8)
+        # thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+        return thresh

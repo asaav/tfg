@@ -37,7 +37,7 @@ class VideoCapture(QWidget):
 
         self.rawFrame = None
         self.trackers = []
-        self.subtractor = create_subtractor(self.scale, subtraction)
+        self.subtractor = create_subtractor(subtraction)
 
         self.trackersB = QPushButton('Trackers', self)
         self.trackersB.setFixedWidth(50)
@@ -161,8 +161,15 @@ class ControlWindow(QMainWindow):
                 else:
                     self.capture = VideoCapture(self.videoFileName, self.comboBox.currentText(),
                                                 self.scaleFactor.value(), 'camshift', self.gridLayout)
-                self.pauseButton.clicked.connect(self.capture.pause)
+                self.pauseButton.clicked.connect(self.pauseCapture)
             self.capture.start()
+            # self.pauseButton.show()
+            # self.startButton.hide()
+
+    def pauseCapture(self):
+        self.capture.pause()
+        # self.pauseButton.hide()
+        # self.startButton.show()
 
     def endCapture(self):
         self.capture.deleteLater()
@@ -238,6 +245,7 @@ class ControlWindow(QMainWindow):
         self.pauseButton.setMaximumSize(QtCore.QSize(16777215, 50))
         self.pauseButton.setObjectName("pauseButton")
         self.gridLayout.addWidget(self.pauseButton, 0, 1, 1, 1)
+        #self.pauseButton.hide()
         self.startButton = QtWidgets.QPushButton(self)
         self.startButton.setText("Play")
         self.startButton.clicked.connect(self.startCapture)

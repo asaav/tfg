@@ -1,9 +1,12 @@
 import sys
 import cv2
+
+from dialogue import HelpDialogue
 from imageoperations import scale_image, draw_contours, print_stats, match_contours, get_contours
 from objectdetection import create_subtractor
 from tracking import create_tracker
 from comargs import process_args
+from PyQt5 import QtWidgets
 
 
 def init_trackers(rois, frame, method):
@@ -16,19 +19,19 @@ def init_trackers(rois, frame, method):
 
 
 def main():
-
     args = process_args()
 
     cap = cv2.VideoCapture(args.video)
-    video_length = cap.get(cv2.CAP_PROP_FRAME_COUNT)/cap.get(cv2.CAP_PROP_FPS)
+    video_length = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
     trackers = []
-    subtractor = create_subtractor(args.scale, args.backsub)
+    subtractor = create_subtractor(args.backsub)
 
     if not cap.isOpened():
         print(sys.argv[1] + " couldn't be opened.",
               file=sys.stderr)
         exit(1)
 
+    action = False
     play_video = True
     ret = None
     raw_frame = None
@@ -59,6 +62,9 @@ def main():
                 cont_ids = match_contours(last_contours, contours, last_ids)
                 draw_contours(frame, cont_ids, contours)
 
+                if action:
+                    print("Jugada en curso")
+
                 # add stats
                 frame = print_stats(frame, width, height, start, cap.get(cv2.CAP_PROP_POS_MSEC), video_length)
                 last_ids = cont_ids
@@ -79,17 +85,28 @@ def main():
         # space to pause
         elif key == ord(' '):
             play_video = not play_video
-        # j to rewind 5 seconds
+        # j to start/stop an action
         elif key == ord('j'):
-            time = cap.get(cv2.CAP_PROP_POS_MSEC)
-            cap.set(cv2.CAP_PROP_POS_MSEC, time-5000)
+            action = not action
+        # k to rewind 5 seconds
         elif key == ord('k'):
             time = cap.get(cv2.CAP_PROP_POS_MSEC)
-            cap.set(cv2.CAP_PROP_POS_MSEC, time+5000)
+            cap.set(cv2.CAP_PROP_POS_MSEC, time - 5000)
+        # l to forward 5 seconds
+        elif key == ord('l'):
+            time = cap.get(cv2.CAP_PROP_POS_MSEC)
+            cap.set(cv2.CAP_PROP_POS_MSEC, time + 5000)
+        # h to get help window
+        elif key == ord('h'):
+            window = HelpDialogue(False)
+            window.show()
 
     cap.release()
+    cv2.imwrite('backgroundModel.jpg', subtractor.getBackgroundImage())
     cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
     main()
+    sys.exit(app.exec_())
