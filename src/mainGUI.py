@@ -1,8 +1,11 @@
+import os
+import pickle
 import sys
 import cv2
 from PyQt5.QtGui import QImage, QPixmap
 from qtpy import QtCore, QtGui, QtWidgets
 
+from dialogue import HelpDialogue
 from imageoperations import scale_image, draw_contours, print_stats, match_contours, get_contours
 from objectdetection import create_subtractor
 from tracking import create_tracker
@@ -13,8 +16,8 @@ from PyQt5.QtWidgets import QWidget, QLabel, QMainWindow, QAction, QFileDialog, 
 
 
 class VideoCapture(QWidget):
-    def __init__(self, filename, subtraction, scale, tracker_method, parentLayout):
-        super(QWidget, self).__init__()
+    def __init__(self, filename, subtraction, scale, tracker_method, parentLayout, parent):
+        super(QWidget, self).__init__(parent)
         self.videoFrame = QLabel()
 
         # Init timer
@@ -23,7 +26,7 @@ class VideoCapture(QWidget):
         self.timer.timeout.connect(self.nextFrameSlot)
 
         # Opencv capture and stats
-        self.cap = cv2.VideoCapture(str(filename[0]))
+        self.cap = cv2.VideoCapture(str(filename))
         self.length = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self.frame_rate = self.cap.get(cv2.CAP_PROP_FPS)
         self.duration = self.length / self.cap.get(cv2.CAP_PROP_FPS)
@@ -31,6 +34,10 @@ class VideoCapture(QWidget):
         self.scale = scale
 
         # Program variables
+        self.videoName = os.path.splitext(os.path.basename(str(filename)))[0]
+        self.log = open('{0}.log'.format(self.videoName), 'w')
+        self.log.write("FRAME NUMBER;POSITION;ID;BALL\n")
+
         self.positionSlider = QSlider(Qt.Horizontal)
         self.positionSlider.setRange(0, self.duration)
         self.positionSlider.sliderMoved.connect(self.setPosition)
@@ -46,11 +53,17 @@ class VideoCapture(QWidget):
         self.last_ids = []
         self.last_contours = []
 
+        self.action = False
+        self.allContours = []
+
         parentLayout.addWidget(self.positionSlider, 1, 1, 1, 4)
         parentLayout.addWidget(self.trackersB, 1, 0, 1, 1)
         # parentLayout.addRow(self.positionSlider, self.trackersB)
         parentLayout.addWidget(self.videoFrame, 2, 0, 2, 4)
         # parentLayout.addRow(self.videoFrame)
+
+    def setAction(self):
+        self.action = not self.action
 
     def setPosition(self, position):
         self.cap.set(cv2.CAP_PROP_POS_MSEC, position * 1000)
@@ -85,7 +98,15 @@ class VideoCapture(QWidget):
 
             contours = get_contours(processed)
             cont_ids = match_contours(self.last_contours, contours, self.last_ids)
-            draw_contours(frame, cont_ids, contours)
+            frame, ball_id = draw_contours(frame, cont_ids, contours)
+
+            if self.action:
+                nframe = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
+                for i, c in enumerate(contours):
+                    (x, y, w, h) = cv2.boundingRect(c)
+                    cont_id = cont_ids[i]
+                    self.log.write('{0};{1};{2};{3}\n'.format(nframe, (x, y), cont_id, cont_id == ball_id))
+                    self.allContours.append((nframe, contours, contours, ball_id))
 
             # add stats
             frame = print_stats(frame, width, height, start, self.cap.get(cv2.CAP_PROP_POS_MSEC), self.duration)
@@ -102,7 +123,13 @@ class VideoCapture(QWidget):
             self.positionSlider.setValue(int(round(self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000)))
             self.videoFrame.setPixmap(pix)
         else:
-            cv2.imshow('background', self.subtractor.getBackgroundImage())
+            self.cap.release()
+            dmp = open('{0}.dmp'.format(self.videoName), 'wb')
+            pickle.dump(self.allContours, dmp)
+            self.log.close()
+            dmp.close()
+            cv2.imwrite('backgroundModel.jpg', self.subtractor.getBackgroundImage())
+            self.parent().close()
 
     def start(self):
         # Start timer with timeout of 1000/fps ms
@@ -140,6 +167,13 @@ class ControlWindow(QMainWindow):
         self.fileMenu.addAction(self.openVideoFile)
         self.fileMenu.addAction(self.quitAction)
 
+        self.openHelp = QAction('Controles', self)
+        self.openHelp.setShortcut("H")
+        self.openHelp.triggered.connect(self.openHelpWindow)
+
+        self.helpMenu = self.mainMenu.addMenu('Ayuda')
+        self.helpMenu.addAction(self.openHelp)
+
         self.wid = QWidget()
         self.setCentralWidget(self.wid)
         self.buildGUI()
@@ -148,6 +182,13 @@ class ControlWindow(QMainWindow):
         if a0.key() == QtCore.Qt.Key_T:
             if self.capture is not None and self.isVideoFileLoaded:
                 self.capture.init_trackers()
+        if a0.key() == QtCore.Qt.Key_J:
+            if self.capture is not None and self.isVideoFileLoaded:
+                self.capture.setAction()
+                if self.statusBar().currentMessage() == '':
+                    self.statusBar().showMessage('Capturando jugada', 0)
+                else:
+                    self.statusBar().clearMessage()
 
     def setPosition(self, position):
         self.capture.setPosition(position)
@@ -157,11 +198,12 @@ class ControlWindow(QMainWindow):
             if not self.capture and self.isVideoFileLoaded:
                 if self.meanshift.isChecked():
                     self.capture = VideoCapture(self.videoFileName, self.comboBox.currentText(),
-                                                self.scaleFactor.value(), 'meanshift', self.gridLayout)
+                                                self.scaleFactor.value(), 'meanshift', self.gridLayout, self)
                 else:
                     self.capture = VideoCapture(self.videoFileName, self.comboBox.currentText(),
-                                                self.scaleFactor.value(), 'camshift', self.gridLayout)
+                                                self.scaleFactor.value(), 'camshift', self.gridLayout, self)
                 self.pauseButton.clicked.connect(self.pauseCapture)
+            self.statusBar().clearMessage()
             self.capture.start()
             # self.pauseButton.show()
             # self.startButton.hide()
@@ -175,9 +217,14 @@ class ControlWindow(QMainWindow):
         self.capture.deleteLater()
         self.capture = None
 
+    def openHelpWindow(self):
+        self.helpDialogue = HelpDialogue(True)
+        self.helpDialogue.show()
+
     def loadVideoFile(self):
-        self.videoFileName = QFileDialog.getOpenFileName(self, 'Select a Video File', filter="Video (*.avi *.mp4)")
+        self.videoFileName = QFileDialog.getOpenFileName(self, 'Select a Video File', filter="Video (*.avi *.mp4)")[0]
         self.isVideoFileLoaded = True
+        self.statusBar().showMessage("{0} loaded".format(self.videoFileName), 0)
 
     def closeApplication(self):
         choice = QMessageBox.question(self, 'Message', 'Do you really want to exit?', QMessageBox.Yes | QMessageBox.No)
@@ -245,7 +292,7 @@ class ControlWindow(QMainWindow):
         self.pauseButton.setMaximumSize(QtCore.QSize(16777215, 50))
         self.pauseButton.setObjectName("pauseButton")
         self.gridLayout.addWidget(self.pauseButton, 0, 1, 1, 1)
-        #self.pauseButton.hide()
+        # self.pauseButton.hide()
         self.startButton = QtWidgets.QPushButton(self)
         self.startButton.setText("Play")
         self.startButton.clicked.connect(self.startCapture)

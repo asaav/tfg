@@ -1,3 +1,5 @@
+import os
+import pickle
 import sys
 import cv2
 
@@ -22,10 +24,12 @@ def main():
     args = process_args()
 
     cap = cv2.VideoCapture(args.video)
+    video_name = os.path.splitext(os.path.basename(args.video))[0]
     video_length = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
     trackers = []
     subtractor = create_subtractor(args.backsub)
-
+    log = open('{0}.log'.format(video_name), 'w')
+    log.write("FRAME NUMBER;POSITION;ID;BALL\n")
     if not cap.isOpened():
         print(sys.argv[1] + " couldn't be opened.",
               file=sys.stderr)
@@ -37,6 +41,7 @@ def main():
     raw_frame = None
     last_contours = []
     last_ids = []
+    all_contours = []
 
     while cap.isOpened():
         if play_video:
@@ -60,10 +65,15 @@ def main():
 
                 contours = get_contours(processed)
                 cont_ids = match_contours(last_contours, contours, last_ids)
-                draw_contours(frame, cont_ids, contours)
+                frame, ball_id = draw_contours(frame, cont_ids, contours)
 
                 if action:
-                    print("Jugada en curso")
+                    nframe = cap.get(cv2.CAP_PROP_POS_FRAMES)
+                    for i, c in enumerate(contours):
+                        (x, y, w, h) = cv2.boundingRect(c)
+                        cont_id = cont_ids[i]
+                        log.write('{0};{1};{2};{3}\n'.format(nframe, (x, y), cont_id, cont_id == ball_id))
+                        all_contours.append((nframe, contours, contours, ball_id))
 
                 # add stats
                 frame = print_stats(frame, width, height, start, cap.get(cv2.CAP_PROP_POS_MSEC), video_length)
@@ -102,6 +112,10 @@ def main():
             window.show()
 
     cap.release()
+    dmp = open('{0}.dmp'.format(video_name), 'wb')
+    pickle.dump(all_contours, dmp)
+    log.close()
+    dmp.close()
     cv2.imwrite('backgroundModel.jpg', subtractor.getBackgroundImage())
     cv2.destroyAllWindows()
 
@@ -109,4 +123,4 @@ def main():
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     main()
-    sys.exit(app.exec_())
+    app.exit()

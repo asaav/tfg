@@ -147,6 +147,7 @@ def get_contours(subtractor_frame):
 
 
 def draw_contours(img, ids, contours):
+    ball_id = None
     # Calculate circularity using the formula C = (4*pi*area)/(perimeter^2)
     roundness = []
     for c in contours:
@@ -158,8 +159,9 @@ def draw_contours(img, ids, contours):
             (x, y, w, h) = cv2.boundingRect(c)
             cv2.putText(img, str(ids[index]), (x, y-5), cv2.FONT_HERSHEY_PLAIN, 0.8, (255, 255, 255))
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            ball_id = ids[index]
         else:
             (x, y, w, h) = cv2.boundingRect(c)
             cv2.putText(img, str(ids[index]), (x, y-5), cv2.FONT_HERSHEY_PLAIN, 0.8, (255, 255, 255))
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    return img
+    return img, ball_id
