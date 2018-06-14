@@ -1,0 +1,25 @@
+% Cabecera
+\include{header}
+
+\begin{document}
+% Portada
+\include{portada}
+
+%Índice
+\tableofcontents
+\newpage
+
+%Índice de figuras
+\listoffigures
+\newpage
+
+% Cuerpo del documento
+\include{preambulo}
+\input{introduccion}
+\input{stateoftheart}
+\input{analisis}
+\input{design}
+\input{conclusion}
+\newpage
+\bibliography{bibliography} 
+\end{document}

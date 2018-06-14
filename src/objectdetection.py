@@ -131,18 +131,18 @@ class KNNSubtractor (Subtractor):
 
 
 class DifferenceSubtractor (Subtractor):
-    background = None
+    __background = None
 
     def __init__(self, background):
-        self.background = background
+        self.__background = background
 
     def getBackgroundImage(self):
-        return self.background
+        return self.__background
 
     def apply(self, image):
         # blur image to delete noise
         image = cv2.GaussianBlur(image, (5, 5), 0)
-        difference = cv2.absdiff(image, self.background)
+        difference = cv2.absdiff(image, self.__background)
 
         lower = (25, 25, 25)
         upper = (255, 255, 255)

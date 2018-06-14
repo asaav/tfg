@@ -1,0 +1,188 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[square,numbers]{natbib}
+\bibliographystyle{unsrtnat}
+
+%%%%% Idioma y codificación
+\usepackage[spanish]{babel}
+%\usepackage{ucs}
+\usepackage[latin1,utf8x]{inputenc}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{enumitem}
+\usepackage{tikz}
+
+%%%%% Margins
+\topmargin=-0.45in
+\evensidemargin=0in
+\oddsidemargin=0in
+\headsep=0.25in
+\textwidth=450pt
+\textheight=660pt
+\linespread{1.0} % Line spacing
+\setlength{\parskip}{1em}
+
+% Paquete comentarios
+\usepackage{comment}
+
+\usepackage{soul} % para tachar palabras
+\usepackage[normalem]{ulem}
+
+%%%%% URLs
+\usepackage{url} % para insertar urls
+\usepackage{multirow} % para las tablas
+\usepackage{hyperref}
+\usepackage{graphicx} % Required to insert images
+\usepackage{subcaption}
+\usepackage{float} % Imagenes
+\usepackage{placeins}
+\usepackage{array}
+%%
+\makeatletter
+\g@addto@macro{\UrlBreaks}{\UrlOrds}
+\makeatother
+%\usepackage{breakurl}
+%\usepackage[breaklinks]{hyperref}
+%\def\UrlBreaks{\do\/\do-}
+
+%%%%% Figuras y punto en vez de dos puntos
+\usepackage{caption}
+\DeclareCaptionLabelSeparator{punto}{. }
+\captionsetup{labelsep=punto}
+
+%\usepackage{subcaption}
+\usepackage{lscape}
+\usepackage{courier} % Required for the courier font
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template%
+%\usepackage[usenames,dvipsnames]{color} % Required for custom colors
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+unicode=false,          % non-Latin characters IN Acrobatâ€™s bookmarks
+pdftoolbar=true,        % show Acrobatâ€™s toolbar?
+pdfmenubar=true,        % show Acrobatâ€™s menu?
+pdffitwindow=false,     % window fit to page when opened
+pdfstartview={FitH},    % fits the width of the page to the window
+pdftitle={My title},    % title
+pdfauthor={Author},     % author
+pdfsubject={Subject},   % subject of the document
+pdfcreator={Creator},   % creator of the document
+pdfproducer={Producer}, % producer of the document
+pdfkeywords={keyword1} {key2} {key3}, % list of keywords
+pdfnewwindow=true,      % links IN new PDF window
+colorlinks=true,        % false: boxed links; true: colored links
+linkcolor=black,          % color of internal links (change box color with linkbordercolor)
+citecolor=blue,        % color of links to bibliography
+filecolor=magenta,      % color of file links
+urlcolor=blue
+}
+
+\usepackage{color}
+\usepackage{cancel}
+\usepackage{mathtools}
+
+%%Codigo de consola
+\usepackage{verbatim}
+\usepackage{mwe}
+\usepackage{listings}
+\usepackage{etoolbox}
+\usepackage{amsmath}
+
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.47,0.47,0.33}
+\definecolor{myorange}{rgb}{0.8,0.4,0}
+\definecolor{mywhite}{rgb}{0.98,0.98,0.98}
+\definecolor{myblue}{rgb}{0.01,0.61,0.98}
+
+\newcommand*{\FormatDigit}[1]{\ttfamily\textcolor{mygreen}{#1}}
+%% http://tex.stackexchange.com/questions/32174/listings-package-how-can-i-format-all-numbers
+\lstdefinestyle{FormattedNumber}{%
+literate=*{0}{{\FormatDigit{0}}}{1}%
+{1}{{\FormatDigit{1}}}{1}%
+{2}{{\FormatDigit{2}}}{1}%
+{3}{{\FormatDigit{3}}}{1}%
+{4}{{\FormatDigit{4}}}{1}%
+{5}{{\FormatDigit{5}}}{1}%
+{6}{{\FormatDigit{6}}}{1}%
+{7}{{\FormatDigit{7}}}{1}%
+{8}{{\FormatDigit{8}}}{1}%
+{9}{{\FormatDigit{9}}}{1}%
+{.0}{{\FormatDigit{.0}}}{2}% Following is to ensure that only periods
+{.1}{{\FormatDigit{.1}}}{2}% followed by a digit are changed.
+{.2}{{\FormatDigit{.2}}}{2}%
+{.3}{{\FormatDigit{.3}}}{2}%
+{.4}{{\FormatDigit{.4}}}{2}%
+{.5}{{\FormatDigit{.5}}}{2}%
+{.6}{{\FormatDigit{.6}}}{2}%
+{.7}{{\FormatDigit{.7}}}{2}%
+{.8}{{\FormatDigit{.8}}}{2}%
+{.9}{{\FormatDigit{.9}}}{2}%
+%{,}{{\FormatDigit{,}}{1}% depends if you want the "," in color
+{\ }{{ }}{1}% handle the space
+,%
+}
+
+\lstset{%
+backgroundcolor=\color{mywhite},
+basicstyle=\footnotesize,
+breakatwhitespace=false,
+breaklines=true,
+captionpos=b,
+commentstyle=\color{red},
+deletekeywords={...},
+escapeinside={\%*}{*)},
+extendedchars=true,
+frame=shadowbox,
+keepspaces=true,
+keywordstyle=\color{myorange},
+language=Octave,
+morekeywords={*,...},
+%numbers=left,
+%numbersep=5pt,
+%numberstyle=\tiny\color{mygray},
+rulecolor=\color{black},
+rulesepcolor=\color{myblue},
+showspaces=false,
+showstringspaces=false,
+showtabs=false,
+stepnumber=2,
+stringstyle=\color{myorange},
+tabsize=2,
+title=\lstname,
+emphstyle=\bfseries\color{blue},%  style for emph={}
+}
+
+
+\lstset{language=C,
+backgroundcolor=\color[gray]{0.95},% color del fondo
+frame=single,		% dibuja un borde
+columns=flexible,	% el tamaño de letra se ajusta al ancho
+extendedchars=false,
+aboveskip=1eM,
+basicstyle=\ttfamily,
+keywordstyle=\color{black}\ttfamily, %Color de las palabras clave - blue
+stringstyle=\color{black}\ttfamily, % Red
+commentstyle=\color{black}\ttfamily, % Brown
+morecomment=[l][\color{magenta}]{\#}
+}
+
+%%%% Encabezado y pie de pagina
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\lhead{}
+\rhead{\nouppercase{\leftmark}}
+\cfoot{\thepage}
+
+\renewcommand{\headrulewidth}{0.4pt} % grosor de la línea de la cabecera
+\renewcommand{\footrulewidth}{0.4pt} % grosor de la línea del pie
+
+\setlength{\headheight}{15pt}
+
+\usepackage{etoolbox}
+\let\bbordermatrix\bordermatrix
+\patchcmd{\bbordermatrix}{8.75}{4.75}{}{}
+\patchcmd{\bbordermatrix}{\left(}{\left[}{}{}
+\patchcmd{\bbordermatrix}{\right)}{\right]}{}{}
+
+%\setcounter{secnumdepth}{3}
+

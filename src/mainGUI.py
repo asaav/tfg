@@ -19,6 +19,7 @@ class VideoCapture(QWidget):
     def __init__(self, filename, subtraction, scale, tracker_method, parentLayout, parent):
         super(QWidget, self).__init__(parent)
         self.videoFrame = QLabel()
+        self.videoFrame.setObjectName('videoFrame')
 
         # Init timer
         self.timer = QTimer()
@@ -37,6 +38,7 @@ class VideoCapture(QWidget):
         self.videoName = os.path.splitext(os.path.basename(str(filename)))[0]
         self.log = open('{0}.log'.format(self.videoName), 'w')
         self.log.write("FRAME NUMBER;POSITION;ID;BALL\n")
+        self.videoOutput = True  # Video or subtractor output
 
         self.positionSlider = QSlider(Qt.Horizontal)
         self.positionSlider.setRange(0, self.duration)
@@ -50,17 +52,20 @@ class VideoCapture(QWidget):
         self.trackersB.setFixedWidth(50)
         self.trackersB.clicked.connect(self.init_trackers)
 
+        self.checkbox = QtWidgets.QCheckBox(self)
+        self.checkbox.setChecked(True)
+        self.checkbox.setText('Video output')
+
         self.last_ids = []
         self.last_contours = []
 
         self.action = False
         self.allContours = []
 
-        parentLayout.addWidget(self.positionSlider, 1, 1, 1, 4)
         parentLayout.addWidget(self.trackersB, 1, 0, 1, 1)
-        # parentLayout.addRow(self.positionSlider, self.trackersB)
+        parentLayout.addWidget(self.checkbox, 1, 1, 1, 1)
+        parentLayout.addWidget(self.positionSlider, 1, 2, 1, 3)
         parentLayout.addWidget(self.videoFrame, 2, 0, 2, 4)
-        # parentLayout.addRow(self.videoFrame)
 
     def setAction(self):
         self.action = not self.action
@@ -116,9 +121,14 @@ class VideoCapture(QWidget):
             w = self.videoFrame.width()
             h = self.videoFrame.height()
 
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = cv2.resize(frame, (w, h), interpolation=cv2.INTER_CUBIC)
-            img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
+            if self.checkbox.isChecked():
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                frame = cv2.resize(frame, (w, h), interpolation=cv2.INTER_CUBIC)
+                img = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
+            else:
+                processed = cv2.resize(processed, (w, h), interpolation=cv2.INTER_CUBIC)
+                cv2.imshow('processed', processed)
+                img = QImage(processed, processed.shape[1], processed.shape[0], QImage.Format_Grayscale8)
             pix = QPixmap.fromImage(img)
             self.positionSlider.setValue(int(round(self.cap.get(cv2.CAP_PROP_POS_MSEC) / 1000)))
             self.videoFrame.setPixmap(pix)
@@ -192,6 +202,15 @@ class ControlWindow(QMainWindow):
 
     def setPosition(self, position):
         self.capture.setPosition(position)
+
+    def resizeEvent(self, a0: QtGui.QResizeEvent):
+        video = self.findChild(QLabel, 'videoFrame')
+        if video:
+            video.clear()
+            w = video.width()
+            h = video.height()
+            pix = QPixmap(w, h)
+            video.setPixmap(pix)
 
     def startCapture(self):
         if self.videoFileName is not None:
@@ -284,24 +303,26 @@ class ControlWindow(QMainWindow):
         self.gridLayout.addLayout(self.scaleForm, 0, 2, 1, 1)
         self.pauseButton = QtWidgets.QPushButton(self)
         self.pauseButton.setText("Pause")
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.pauseButton.sizePolicy().hasHeightForWidth())
-        self.pauseButton.setSizePolicy(sizePolicy)
-        self.pauseButton.setMaximumSize(QtCore.QSize(16777215, 50))
+        # sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        # sizePolicy.setHorizontalStretch(0)
+        # sizePolicy.setVerticalStretch(0)
+        # sizePolicy.setHeightForWidth(self.pauseButton.sizePolicy().hasHeightForWidth())
+        # self.pauseButton.setSizePolicy(sizePolicy)
+        # self.pauseButton.setMaximumSize(QtCore.QSize(16777215, 50))
+        self.pauseButton.setFixedWidth(50)
         self.pauseButton.setObjectName("pauseButton")
         self.gridLayout.addWidget(self.pauseButton, 0, 1, 1, 1)
         # self.pauseButton.hide()
         self.startButton = QtWidgets.QPushButton(self)
         self.startButton.setText("Play")
+        self.startButton.setFixedWidth(50)
         self.startButton.clicked.connect(self.startCapture)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.startButton.sizePolicy().hasHeightForWidth())
-        self.startButton.setSizePolicy(sizePolicy)
-        self.startButton.setMaximumSize(QtCore.QSize(16777215, 50))
+        # sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Minimum)
+        # sizePolicy.setHorizontalStretch(0)
+        # sizePolicy.setVerticalStretch(0)
+        # sizePolicy.setHeightForWidth(self.startButton.sizePolicy().hasHeightForWidth())
+        # self.startButton.setSizePolicy(sizePolicy)
+        # self.startButton.setMaximumSize(QtCore.QSize(16777215, 50))
         self.startButton.setObjectName("startButton")
         self.gridLayout.addWidget(self.startButton, 0, 0, 1, 1)
         self.groupBox = QtWidgets.QGroupBox(self)
