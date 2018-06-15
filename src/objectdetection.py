@@ -11,15 +11,15 @@ def create_subtractor(method):
     elif method == "MOG":
         return MOGSubtractor(200, 5, 0.7, 0)
     elif method == "MOG2":
-        return MOG2Subtractor(500, 60, True)
+        return MOG2Subtractor(150, 60, True)
     elif method == "GMG":
-        return GMGSubtractor()
+        return GMGSubtractor(120, 0.75)
     elif method == "CNT":
         return CNTSubtractor()
     elif method == 'GSOC':
         return GSOCSubtractor()
     else:
-        return KNNSubtractor(500, 400, False)
+        return KNNSubtractor(300, 400, True)
 
 
 class Subtractor (ABC):
@@ -37,7 +37,7 @@ class Subtractor (ABC):
 class GMGSubtractor (Subtractor):
     sub = None
 
-    def __init__(self, initilizationFrames=24, decisionThreshold=0.8):
+    def __init__(self, initilizationFrames=120, decisionThreshold=0.8):
         self.sub = cv2.bgsegm.createBackgroundSubtractorGMG(initilizationFrames, decisionThreshold)
 
     def apply(self, image):
@@ -103,22 +103,22 @@ class MOG2Subtractor (Subtractor):
 
     def apply(self, image):
         if self.sub:
-            fgmask = self.sub.apply(image, learningRate=0.0005)
+            fgmask = self.sub.apply(image, learningRate=0.0006)
 
             # remove noise
             kernel = np.ones((3, 3), np.uint8)
             closed = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
 
             # remove shadows
-            thresh = cv2.threshold(closed, 128, 255, cv2.THRESH_BINARY)
+            thresh = cv2.threshold(closed, 128, 255, cv2.THRESH_BINARY)[1]
 
-            return thresh[1]
+            return thresh
 
 
 class KNNSubtractor (Subtractor):
     sub = None
 
-    def __init__(self, history=None, dist2threshold=None, detectshadows=None):
+    def __init__(self, history=500, dist2threshold=400, detectshadows=True):
         self.sub = cv2.createBackgroundSubtractorKNN(history, dist2threshold, detectshadows)
 
     def apply(self, image):
@@ -127,7 +127,11 @@ class KNNSubtractor (Subtractor):
 
             kernel = np.ones((3, 3), np.uint8)
             closed = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
-            return closed
+
+            # remove shadows
+            thresh = cv2.threshold(closed, 170, 255, cv2.THRESH_BINARY)[1]
+
+            return thresh
 
 
 class DifferenceSubtractor (Subtractor):
