@@ -11,7 +11,7 @@ def create_subtractor(method):
     elif method == "MOG":
         return MOGSubtractor(200, 5, 0.7, 0)
     elif method == "MOG2":
-        return MOG2Subtractor(150, 60, True)
+        return MOG2Subtractor(250, 40, True)
     elif method == "GMG":
         return GMGSubtractor(120, 0.75)
     elif method == "CNT":
@@ -19,7 +19,7 @@ def create_subtractor(method):
     elif method == 'GSOC':
         return GSOCSubtractor()
     else:
-        return KNNSubtractor(300, 400, True)
+        return KNNSubtractor(350, 400, True)
 
 
 class Subtractor (ABC):
@@ -106,11 +106,14 @@ class MOG2Subtractor (Subtractor):
             fgmask = self.sub.apply(image, learningRate=0.0006)
 
             # remove noise
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+            fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
+
             kernel = np.ones((3, 3), np.uint8)
-            closed = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
+            fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
 
             # remove shadows
-            thresh = cv2.threshold(closed, 128, 255, cv2.THRESH_BINARY)[1]
+            thresh = cv2.threshold(fgmask, 128, 255, cv2.THRESH_BINARY)[1]
 
             return thresh
 
@@ -125,11 +128,14 @@ class KNNSubtractor (Subtractor):
         if self.sub:
             fgmask = self.sub.apply(image)
 
-            kernel = np.ones((3, 3), np.uint8)
-            closed = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+            fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
+
+            # kernel = np.ones((3, 3), np.uint8)
+            fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
 
             # remove shadows
-            thresh = cv2.threshold(closed, 170, 255, cv2.THRESH_BINARY)[1]
+            thresh = cv2.threshold(fgmask, 170, 255, cv2.THRESH_BINARY)[1]
 
             return thresh
 
@@ -146,15 +152,18 @@ class DifferenceSubtractor (Subtractor):
     def apply(self, image):
         # blur image to delete noise
         image = cv2.GaussianBlur(image, (5, 5), 0)
-        difference = cv2.absdiff(image, self.__background)
+        difference = cv2.absdiff(self.__background, image)
 
-        lower = (25, 25, 25)
+        lower = (35, 35, 35)
         upper = (255, 255, 255)
         thresh = cv2.inRange(difference, lower, upper)
+
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
 
         # kernel = np.ones((3, 3), np.uint8)
         # thresh = cv2.erode(thresh, kernel, iterations=1)
         #
-        # kernel = np.ones((3, 3), np.uint8)
-        # thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+        kernel = np.ones((3, 3), np.uint8)
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
         return thresh

@@ -15,7 +15,7 @@ Teniendo en cuenta que la cámara es fija y cenital, y por tanto el fondo siempr
 
 Por desgracia, las condiciones de iluminación no siempre van a ser totalmente iguales, lo cual va a dificultar en gran medida la detección de objetos usando este método. Además, no siempre vamos a tener disponible una imagen limpia del campo en un video, por lo que es complicado realizar un modelo del campo para las diferentes condiciones de iluminación a lo largo de un día.
 
-Una vez hemos podido ver que esta manera de proceder no es todo lo viable que cabría desear, podemos empezar a plantearnos otras opciones a nuestra disposición. OpenCV proporciona distintos algoritmos de sustracción de fondo, los cuales podemos aprovechar y comparar para ver cuál es más apropiado para nuestro propósito
+Una vez hemos podido ver que esta manera de proceder no es todo lo viable que cabría desear, podemos empezar a plantearnos otras opciones a nuestra disposición. OpenCV proporciona distintos algoritmos de sustracción de fondo, los cuales podemos aprovechar y comparar para ver cuál es más apropiado para nuestro propósito.
 
 \begin{figure}
     \centering
@@ -24,7 +24,15 @@ Una vez hemos podido ver que esta manera de proceder no es todo lo viable que ca
     \label{fig:subtractors}
 \end{figure}
 
-Para facilitar el uso de estos algoritmos, se ha hecho uso de la programación orientada a objetos que nos ofrece Python. Se ha creado una clase abstracta llamada Subtractor de la cual heredan todas las clases que hagan uso de los algoritmos de OpenCV así como el de diferencia de frames. Dicha clase proporciona una interfaz común a todas las clases, que hará mas sencillo el uso de ellas. La estructura resultante puede verse en la figura \ref{fig:subtractors}
+Para facilitar el uso de estos algoritmos, se ha hecho uso de la programación orientada a objetos que nos ofrece Python. Se ha creado una clase abstracta llamada Subtractor de la cual heredan todas las clases que hagan uso de los algoritmos de OpenCV así como el de diferencia de frames. Dicha clase proporciona una interfaz común a todas las clases, que hará mas sencillo el uso de ellas. La estructura resultante puede verse en la figura \ref{fig:subtractors}.
+
+El funcionamiento interno de las clases resultantes, como se ha dicho, corresponde a las propias implementaciones de OpenCV. Pasaré a explicar los fundamentos teóricos de cada uno de estos algoritmos
+
+\subsubsection*{MOG}
+MOG, mezcla de gaussianas (\textit{Mixture of Gaussians}), fue descrito en  \cite{KaewTraKulPong2002} 
+
+\subsubsection*{MOG2}
+MOG2 es un algoritmo propuesto en los trabajos \cite{art:Zivkovic1} y \cite{art:Zivkovic2} de Z. Zivkovic. Es una mejora sobre la versión anterior, MOG
 
 \subsection{Seguimiento}
 
