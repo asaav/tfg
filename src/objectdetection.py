@@ -15,7 +15,7 @@ def create_subtractor(method):
     elif method == "GMG":
         return GMGSubtractor(120, 0.90)
     elif method == "CNT":
-        return CNTSubtractor(minPixelStability=30, maxPixelStability=180, isParallel=True)
+        return CNTSubtractor(minPixelStability=1, maxPixelStability=60, isParallel=True)
     elif method == 'GSOC':
         return GSOCSubtractor()
     else:
@@ -79,6 +79,9 @@ class CNTSubtractor(Subtractor):
 
             image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
             fgmask = self.sub.apply(image)
+
+            kernel = np.ones((3, 3), np.uint8)
+            fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
 
             kernel = np.ones((3, 3), np.uint8)
             fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
