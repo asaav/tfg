@@ -9,13 +9,13 @@ def create_subtractor(method):
         background = cv2.GaussianBlur(background, (5, 5), 0)
         return DifferenceSubtractor(background)
     elif method == "MOG":
-        return MOGSubtractor(200, 5, 0.7, 0)
+        return MOGSubtractor(200, 5, 0.55, 8)
     elif method == "MOG2":
         return MOG2Subtractor(250, 40, True)
     elif method == "GMG":
-        return GMGSubtractor(120, 0.75)
+        return GMGSubtractor(120, 0.90)
     elif method == "CNT":
-        return CNTSubtractor()
+        return CNTSubtractor(minPixelStability=30, maxPixelStability=180, isParallel=True)
     elif method == 'GSOC':
         return GSOCSubtractor()
     else:
@@ -45,8 +45,11 @@ class GMGSubtractor (Subtractor):
             fgmask = self.sub.apply(image)
 
             kernel = np.ones((3, 3), np.uint8)
-            closed = cv2.morphologyEx(fgmask, cv2.MORPH_ERODE, kernel)
-            return closed
+            fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
+
+            kernel = np.ones((3, 3), np.uint8)
+            fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
+            return fgmask
 
 
 class GSOCSubtractor (Subtractor):
@@ -67,23 +70,25 @@ class GSOCSubtractor (Subtractor):
 class CNTSubtractor(Subtractor):
     sub = None
 
-    def __init__(self, minPixelStability=50, useHistory=True, maxPixelStability=900, isParallel=True):
+    def __init__(self, minPixelStability=15, useHistory=True, maxPixelStability=900, isParallel=True):
         self.sub = cv2.bgsegm.createBackgroundSubtractorCNT(minPixelStability, useHistory,
                                                             maxPixelStability, isParallel)
 
     def apply(self, image):
         if self.sub:
+
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
             fgmask = self.sub.apply(image)
 
             kernel = np.ones((3, 3), np.uint8)
-            closed = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
-            return closed
+            fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
+            return fgmask
 
 
 class MOGSubtractor (Subtractor):
     sub = None
 
-    def __init__(self, history=None, nmixtures=None, backgroundratio=None, noisesigma=None):
+    def __init__(self, history=200, nmixtures=5, backgroundratio=0.7, noisesigma=0.0):
         self.sub = cv2.bgsegm.createBackgroundSubtractorMOG(history, nmixtures, backgroundratio, noisesigma)
 
     def apply(self, image):
