@@ -27,7 +27,7 @@ def main():
     video_name = os.path.splitext(os.path.basename(args.video))[0]
     video_length = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
     trackers = []
-    subtractor = create_subtractor(args.backsub)
+    subtractor = create_subtractor(args.backsub, args.scale)
     log = open('{0}.log'.format(video_name), 'w')
     log.write("FRAME NUMBER;POSITION;ID;BALL\n")
     if not cap.isOpened():

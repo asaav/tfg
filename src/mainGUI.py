@@ -45,7 +45,7 @@ class VideoCapture(QWidget):
 
         self.rawFrame = None
         self.trackers = []
-        self.subtractor = create_subtractor(subtraction)
+        self.subtractor = create_subtractor(subtraction, scale)
 
         self.trackersB = QPushButton('Trackers', self)
         self.trackersB.setFixedWidth(50)

@@ -1,11 +1,13 @@
 import cv2
 import numpy as np
 from abc import ABC, abstractmethod
+from imageoperations import scale_image
 
 
-def create_subtractor(method):
+def create_subtractor(method, scale):
     if method == "resta":
         background = cv2.imread('backgroundModel1.jpg')
+        background = scale_image(background, scale)[0]
         background = cv2.GaussianBlur(background, (5, 5), 0)
         return DifferenceSubtractor(background)
     elif method == "MOG":
@@ -15,11 +17,11 @@ def create_subtractor(method):
     elif method == "GMG":
         return GMGSubtractor(120, 0.90)
     elif method == "CNT":
-        return CNTSubtractor(minPixelStability=1, maxPixelStability=60, isParallel=True)
+        return CNTSubtractor(minPixelStability=5, maxPixelStability=60, isParallel=True)
     elif method == 'GSOC':
         return GSOCSubtractor()
     else:
-        return KNNSubtractor(350, 400, True)
+        return KNNSubtractor(350, 300, True)
 
 
 class Subtractor (ABC):
@@ -134,7 +136,10 @@ class KNNSubtractor (Subtractor):
 
     def apply(self, image):
         if self.sub:
-            fgmask = self.sub.apply(image)
+            fgmask = self.sub.apply(image, 0.005)
+
+            # remove shadows
+            fgmask = cv2.threshold(fgmask, 175, 255, cv2.THRESH_BINARY)[1]
 
             kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
             fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_OPEN, kernel)
@@ -142,10 +147,7 @@ class KNNSubtractor (Subtractor):
             # kernel = np.ones((3, 3), np.uint8)
             fgmask = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
 
-            # remove shadows
-            thresh = cv2.threshold(fgmask, 170, 255, cv2.THRESH_BINARY)[1]
-
-            return thresh
+            return fgmask
 
 
 class DifferenceSubtractor (Subtractor):
@@ -162,7 +164,7 @@ class DifferenceSubtractor (Subtractor):
         image = cv2.GaussianBlur(image, (5, 5), 0)
         difference = cv2.absdiff(self.__background, image)
 
-        lower = (35, 35, 35)
+        lower = (10, 10, 10)
         upper = (255, 255, 255)
         thresh = cv2.inRange(difference, lower, upper)
 
