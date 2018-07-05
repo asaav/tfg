@@ -293,6 +293,24 @@ CNT es también otro descarte a pesar de estar entre los tres más rápidos, deb
 Con lo cual, nos toca decidir entre MOG2 y KNN, que son los dos candidatos que nos quedan atendiendo a la velocidad de ambos. Ambos tienen una detección muy parecida, pero MOG2 es ligeramente superior a la hora de estimar el modelo de fondo (En la figura \ref{fig:modelos} se puede ver que el modelo de MOG2 es más limpio). También es mejor MOG2 en ciertas ocasiones a la hora de detectar sombras. Por estos motivos, sumados a que la velocidad no es un requisito principal del trabajo, se usará MOG2 como método principal para sustracción de fondo.
 
 \subsection{Seguimiento}
+Otra manera mediante la que podemos detectar a las jugadoras y al balón es el seguimiento o \textit{tracking}. Cabe aclarar que no necesariamente es excluyente el uso de esta técnica con el de sustracción de fondo, sino que puede servir para complementar a esta en ciertos objetos que el sustractor de fondo no detecte correctamente.
+
+Nuevamente, OpenCV pone a nuestra disposición una 2 algoritmos de seguimiento: Meanshift y Camshift. El módulo colaborativo añade otros cuantos más. Al igual que en el apartado anterior, se usará la programación orientada a objetos para crear una jerarquía de clases que haga sencilla la selección del algoritmo a usar, proporcionando una interfaz común al programar.
+
+Los algoritmos de seguimiento que proporciona el módulo colaborativo de OpenCV son Boosting, MIL, Median Flow y TLD, y fueron los primeros que se probaron e implementaron. Los resultados no fueron muy satisfactorios con ninguno de ellos, tanto en velocidad como en detección de los algoritmos.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/trackers}
+    \caption{Estructura de clases de los algoritmos de \textit{tracking}}
+    \label{fig:trackers}
+\end{figure}
+
+Tras descartar los anteriores métodos, se implementaron los métodos de Meanshift y Camshift. Como se ha dicho antes, se ha utilizado una estructura de clases parecida a la de los sustractores de fondo (figura \ref{fig:trackers}) con el mismo objetivo: dar una interfaz común a todas las clases que haga sencillo el seleccionar el algoritmo que se quiera utilizar antes de ejecutar el programa.
+
+\subsubsection*{Meanshift}
+
+\subsubsection*{Camshift}
 
 \subsection{Interfaz gráfica}
 

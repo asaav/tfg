@@ -1,7 +1,8 @@
 \section{Análisis de objetivos y metodología}
+En este apartado se detallarán los aspectos previos a la resolución del proyecto: los objetivos, las herramientas a utilizar para resolverlo, así como la instalación de una cámara que deberá hacerse para obtener imágenes de juego.
 
 \subsection{Objetivos del proyecto}
-En este trabajo se tratará de, usando imágenes de una cámara en vista cenital, hacer un sistema capaz de detectar y seguir (mediante \textit{tracking}) tanto los jugadores como balón de un partido de volleyball. Las imágenes de la cámara serán como las que pueden verse en la figura \ref{fig:campo}
+En este trabajo se tratará de, usando imágenes de una cámara en vista cenital, desarrollar un sistema capaz de detectar y seguir (mediante \textit{tracking}) de manera robusta tanto los jugadores como balón de un partido de volleyball. Las imágenes de la cámara serán como las que pueden verse en la figura \ref{fig:campo}.
 
 \begin{figure}
     \centering
@@ -10,10 +11,44 @@ En este trabajo se tratará de, usando imágenes de una cámara en vista cenital
     \label{fig:campo}
 \end{figure}
 
-Una vez hecho esto, las posiciones de los jugadores y del balón deberían quedar registrados en un archivo CSV, divididas por jugadas y sets. Para hacer esta división, lo ideal es que funcione de forma automática, aunque lo podría hacer un operario mediante pulsaciones de teclas.
+Una vez hecho esto, las posiciones de los jugadores y del balón deberían quedar registrados en un archivo CSV, divididas por jugadas y sets, para su posterior análisis con la intención de extraer estadísticas útiles a nivel técnico. 
 
-El proyecto parte suponiendo que la cámara mencionada ya ha sido instalada. Por tanto, los detalles de la instalación de la parte hardware y la extracción de imágenes del campo de juego quedan fuera del alcance del trabajo.
+Para hacer esta división por jugadas, lo ideal es que el sistema lo haga de forma automática, aunque también podría hacerlo un operario mediante pulsaciones de teclas o mediante el uso de una posible interfaz gráfica.
 
+\subsection{Instalación de cámara en el pabellón}
+Un aspecto primordial para este proyecto era la instalación de una cámara que proporcionase las imágenes descritas en la sección anterior. Dicha cámara es un modelo AXIS P1365-E Mk II (figura \ref{fig:camara}, cuyas características, según su ficha técnica, son:
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/camara}
+    \caption{Imagen de la cámara AXIS P1365-E Mk II}
+    \label{fig:camara}
+\end{figure}
+
+\begin{itemize}
+    \item Rango de temperaturas operativas entre -40 ºC y 50 ºC
+    \item Resistencia a impactos
+    \item Ahorro de ancho de banda mediante tecnología Zipstream
+    \item Vídeo a 1080p y hasta 60 fps
+\end{itemize}
+
+En nuestro caso, la cámara graba a 1080p y 30fps, con un ancho de banda de 100 Mbps en la transferencia de vídeo. Se conecta mediante power over ethernet. El objetivo de la cámara cuenta con zoom óptico variable, con un field of view entre 35-107º en horizontal y 19-67º en vertical. Con el fov máximo, el rango de metros visibles en horizontal es de $2.7\cdot altura_{cam}$. El techo del pabellón es de 10.1 metros, con lo cual el rango máximo de la cámara es de 27,27 metros. En vertical, el rango máximo es de $1.3 \cdot altura_{cam}$, lo que nos da 13,13 metros de rango vertical.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/EduardoLinares}
+    \caption{Exterior del pabellón Eduardo Linares}
+    \label{fig:pabellon}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/EduardoLinaresDentro}
+    \caption{Interior del pabellón Eduardo Linares}
+    \label{fig:pabellonDentro}
+\end{figure}
+
+El pabellón en el que se ha instalado la cámara, previo permiso del Ayuntamiento, es el Eduardo Linares, en Molina de Segura, perteneciente al instituto de Enseñanza Secundaria Eduardo Linares.
 
 \subsection{Herramientas utilizadas y metodología}
 Durante la realización de este trabajo se han utilizado una serie de herramientas que pasaré a listar y detallar a continuación.
