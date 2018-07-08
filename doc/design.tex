@@ -295,7 +295,7 @@ Con lo cual, nos toca decidir entre MOG2 y KNN, que son los dos candidatos que n
 \subsection{Seguimiento}
 Otra manera mediante la que podemos detectar a las jugadoras y al balón es el seguimiento o \textit{tracking}. Cabe aclarar que no necesariamente es excluyente el uso de esta técnica con el de sustracción de fondo, sino que puede servir para complementar a esta en ciertos objetos que el sustractor de fondo no detecte correctamente.
 
-Nuevamente, OpenCV pone a nuestra disposición una 2 algoritmos de seguimiento: Meanshift y Camshift. El módulo colaborativo añade otros cuantos más. Al igual que en el apartado anterior, se usará la programación orientada a objetos para crear una jerarquía de clases que haga sencilla la selección del algoritmo a usar, proporcionando una interfaz común al programar.
+Nuevamente, OpenCV pone a nuestra disposición una 2 algoritmos de seguimiento: Mean Shift y Cam Shift. El módulo colaborativo añade otros cuantos más. Al igual que en el apartado anterior, se usará la programación orientada a objetos para crear una jerarquía de clases que haga sencilla la selección del algoritmo a usar, proporcionando una interfaz común al programar.
 
 Los algoritmos de seguimiento que proporciona el módulo colaborativo de OpenCV son Boosting, MIL, Median Flow y TLD, y fueron los primeros que se probaron e implementaron. Los resultados no fueron muy satisfactorios con ninguno de ellos, tanto en velocidad como en detección de los algoritmos.
 
@@ -306,11 +306,34 @@ Los algoritmos de seguimiento que proporciona el módulo colaborativo de OpenCV 
     \label{fig:trackers}
 \end{figure}
 
-Tras descartar los anteriores métodos, se implementaron los métodos de Meanshift y Camshift. Como se ha dicho antes, se ha utilizado una estructura de clases parecida a la de los sustractores de fondo (figura \ref{fig:trackers}) con el mismo objetivo: dar una interfaz común a todas las clases que haga sencillo el seleccionar el algoritmo que se quiera utilizar antes de ejecutar el programa.
+Tras descartar los anteriores métodos, se implementaron los métodos de Mean Shift y Cam Shift. Como se ha dicho antes, se ha utilizado una estructura de clases parecida a la de los sustractores de fondo (figura \ref{fig:trackers}) con el mismo objetivo: dar una interfaz común a todas las clases que haga sencillo el seleccionar el algoritmo que se quiera utilizar antes de ejecutar el programa.
 
-\subsubsection*{Meanshift}
+\subsubsection*{Mean Shift}
+Mean Shift es una técnica de análisis de espacios de características no paramétrica que consiste en localizar los máximos de una función de densidad, es decir, es un algoritmo de búsqueda de modas. Fue presentada por Fukunaga y Hostetler en 1975 \cite{1055330}. Entre sus aplicaciones se encuentran procesamiento y segmentación de imágenes y, por supuesto, seguimiento o \textit{tracking}.
 
-\subsubsection*{Camshift}
+\begin{figure}
+    \centering
+    \includegraphics[width=0.9\textwidth]{images/clustering}
+    \caption{Ejemplo de aplicación de Mean Shift para clustering}
+    \label{fig:clustering}
+\end{figure}
+
+El algoritmo de Mean Shift, como se ha dicho, tiene como objetivo la búsqueda de máximos de una función de densidad dada. Para hacerlo, se calcula de manera iterativa a partir de una estimación $x$, conocida como ventana. Una vez proporcionada una ventana al algoritmo, se calculan los pesos de todos los puntos de alrededor de $x$ mediante una función $K$, que normalmente suele tener la forma $K(x_i-x) = e^{-e||x_i-x||^2}$. La media pesada de la densidad en la ventana es:
+\[
+  m(x) = \frac{\sum_{x_i\in N(x)}K(x_i-x)x_i}{\sum_{x_i\in N(x)}K(x_i-x)}
+\]
+siendo $N(x)$ el conjunto de vecinos en $x$.
+
+La diferencia $m(x)-x$ es lo que se llama \textit{mean shift} (literalmente: desplazamiento de media) en el trabajo de Fukunaga y Hostetler. En la siguiente iteración se hace $x= m(x)$ y se repite hasta que $m(x)$ converge al mismo valor, con un cierto margen de error. En la figura \ref{fig:pasosmshift} se ve un ejemplo de aplicación de algoritmo, los puntos del conjunto de datos original en azul y los modificados por Mean Shift en rojo. Puede verse claramente que los puntos rojos acaban convergiendo a sus modas locales.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.5\textwidth]{images/pasosmshift}
+    \caption{Proceso de Mean Shift aplicada a una nube de puntos iteración a iteración}
+    \label{fig:pasosmshift}
+\end{figure}
+
+\subsubsection*{Cam Shift}
 
 \subsection{Interfaz gráfica}
 
