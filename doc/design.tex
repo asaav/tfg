@@ -295,25 +295,25 @@ Con lo cual, nos toca decidir entre MOG2 y KNN, que son los dos candidatos que n
 \subsection{Seguimiento}
 Otra manera mediante la que podemos detectar a las jugadoras y al balón es el seguimiento o \textit{tracking}. Cabe aclarar que no necesariamente es excluyente el uso de esta técnica con el de sustracción de fondo, sino que puede servir para complementar a esta en ciertos objetos que el sustractor de fondo no detecte correctamente.
 
-Nuevamente, OpenCV pone a nuestra disposición una 2 algoritmos de seguimiento: Mean Shift y Cam Shift. El módulo colaborativo añade otros cuantos más. Al igual que en el apartado anterior, se usará la programación orientada a objetos para crear una jerarquía de clases que haga sencilla la selección del algoritmo a usar, proporcionando una interfaz común al programar.
+Nuevamente, OpenCV pone a nuestra disposición una 2 algoritmos de seguimiento: Mean Shift y CAMShift. El módulo colaborativo añade otros cuantos más. Al igual que en el apartado anterior, se usará la programación orientada a objetos para crear una jerarquía de clases que haga sencilla la selección del algoritmo a usar, proporcionando una interfaz común al programar.
 
 Los algoritmos de seguimiento que proporciona el módulo colaborativo de OpenCV son Boosting, MIL, Median Flow y TLD, y fueron los primeros que se probaron e implementaron. Los resultados no fueron muy satisfactorios con ninguno de ellos, tanto en velocidad como en detección de los algoritmos.
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{images/trackers}
+    \includegraphics[width=0.35\textwidth]{images/trackers}
     \caption{Estructura de clases de los algoritmos de \textit{tracking}}
     \label{fig:trackers}
 \end{figure}
 
-Tras descartar los anteriores métodos, se implementaron los métodos de Mean Shift y Cam Shift. Como se ha dicho antes, se ha utilizado una estructura de clases parecida a la de los sustractores de fondo (figura \ref{fig:trackers}) con el mismo objetivo: dar una interfaz común a todas las clases que haga sencillo el seleccionar el algoritmo que se quiera utilizar antes de ejecutar el programa.
+Tras descartar los anteriores métodos, se implementaron los métodos de Mean Shift y CAMShift. Como se ha dicho antes, se ha utilizado una estructura de clases parecida a la de los sustractores de fondo (figura \ref{fig:trackers}) con el mismo objetivo: dar una interfaz común a todas las clases que haga sencillo el seleccionar el algoritmo que se quiera utilizar antes de ejecutar el programa.
 
 \subsubsection*{Mean Shift}
 Mean Shift es una técnica de análisis de espacios de características no paramétrica que consiste en localizar los máximos de una función de densidad, es decir, es un algoritmo de búsqueda de modas. Fue presentada por Fukunaga y Hostetler en 1975 \cite{1055330}. Entre sus aplicaciones se encuentran procesamiento y segmentación de imágenes y, por supuesto, seguimiento o \textit{tracking}.
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.9\textwidth]{images/clustering}
+    \includegraphics[width=0.6\textwidth]{images/clustering}
     \caption{Ejemplo de aplicación de Mean Shift para clustering}
     \label{fig:clustering}
 \end{figure}
@@ -326,14 +326,69 @@ siendo $N(x)$ el conjunto de vecinos en $x$.
 
 La diferencia $m(x)-x$ es lo que se llama \textit{mean shift} (literalmente: desplazamiento de media) en el trabajo de Fukunaga y Hostetler. En la siguiente iteración se hace $x= m(x)$ y se repite hasta que $m(x)$ converge al mismo valor, con un cierto margen de error. En la figura \ref{fig:pasosmshift} se ve un ejemplo de aplicación de algoritmo, los puntos del conjunto de datos original en azul y los modificados por Mean Shift en rojo. Puede verse claramente que los puntos rojos acaban convergiendo a sus modas locales.
 
+Ahora bien, en el caso del seguimiento, el algoritmo varía levemente. La ventana inicial es una región de interés de la imagen, a la cual se le calcula el histograma. En cada frame del vídeo, se calcula la retroproyección, es decir, la probabilidad de que un pixel de la imagen pertenezca a la distribución que describe el histograma inicial. Una vez calculado esto, se calcula, iterativamente, el centro de masas de los puntos localizados dentro de la ventana. Como se ha dicho antes, el algoritmo converge cuando el centroide calculado coincide con el centro de la ventana con un cierto margen de error.
+
 \begin{figure}
     \centering
-    \includegraphics[width=0.5\textwidth]{images/pasosmshift}
-    \caption{Proceso de Mean Shift aplicada a una nube de puntos iteración a iteración}
-    \label{fig:pasosmshift}
+    \includegraphics[width=0.4\textwidth]{images/meanshiftopencv}
+    \caption{Diagrama de funcionamiento de Mean Shift aplicado a tracking}
+    \label{fig:meanshiftopencv}
 \end{figure}
 
-\subsubsection*{Cam Shift}
+
+Entre las ventajas de Mean Shift se encuentra si capacidad para manejar y adaptarse a distintos espacios de características, además de, en el caso de la segmentación, que no es necesario dar un número de clusters de datos, sino que el algoritmo es capaz de hallarlos por sí mismo. Sin embargo, es un algoritmo más bien lento (tiene un orden de $n^2$) aunque fácilmente paralelizable, y, en el caso del seguimiento, dado que el tamaño de la ventana es constante, puede tener problemas en caso de que algún objeto de la escena cambie de tamaño (se acerque o bien se aleje, como en la figura \ref{fig:ejemplos1a})
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.4\textwidth]{images/pasosmshift}
+  \caption{Mean Shift aplicado a una nube de puntos iteración a iteración}
+  \label{fig:pasosmshift}
+\end{figure}
+
+\subsubsection*{CAMShift}
+
+CAMShift es una versión adaptativa del algoritmo anterior propuesta por Gary Bradski \textit{et al.} \cite{art:camshift}. Básicamente, este método soluciona la falta de adaptabilidad de la ventana de Mean Shift. Para ello, se aplica en cada frame Mean Shift de la misma manera que se ha expuesto en el apartado anterior. La diferencia es que en este caso, tras la aplicación de Mean Shift, se calculan $M_{00}$, $M_{20}$ y $M_{02}$, definidos por:
+\[
+  M_{00} = \sum_x \sum_y I(x,y) ; M_{20} = \sum_x \sum_y x^2 I(x,y) ; M_{02} = \sum_x \sum_y y^2 I(x,y)
+\]
+
+Siendo $I(x,y)$ la probabilidad en la posición $(x,y)$. Con estos valores se calculan los parámetros de la nueva ventana: orientación $\theta$, longitud $l$ y anchura $w$. Sea
+
+\[
+a = \frac{M_{20}}{M_{00}} - x_c^2 ; b = 2(\frac{M_{11}}{M_00}-x_cy_c) ; c = \frac{M_{02}}{M_{00}} - y_c^2
+\]
+La nueva ventana puede calcularse como
+\begin{gather*}
+  \theta = \frac{\arctan \frac{2b}{a-c}}{2} \\
+  l = \sqrt{\frac{(a+c)+\sqrt{b^2+(a-c)^2}}{2}} \\
+  w = \sqrt{\frac{(a+c)-\sqrt{b^2+(a-c)^2}}{2}}
+\end{gather*}
+
+El resto del método es exactamente igual que Mean Shift, se hace uso de un histograma y retroproyecciones para calcular el centro de la ventana. Por ello, el resultado obtenido es igualmente bueno con la ventaja de que se adapta a cambios de tamaño en los objetos de la escena. Sin embargo, CAMShift es ligeramente más costoso de procesar, debido a los cálculos necesarios para hallar las medidas de la ventana.
+
+\subsubsection*{Comparativa y selección}
+
+\begin{figure}
+  \begin{subfigure}{.5\textwidth}
+    \centering
+    \includegraphics[width=.45\textwidth]{images/cochemeanshift}
+    \caption{}
+    \label{fig:ejemplos1a}
+  \end{subfigure}
+  \begin{subfigure}{.4\textwidth}
+    \centering
+    \includegraphics[width=0.65\textwidth]{images/cochecamshift}
+    \caption{ }
+    \label{fig:ejemplos1b}
+  \end{subfigure}
+  \caption{Ejemplos de tracking usando Mean Shift y CAMShift (a) Usando Mean Shift (b) Usando CAMShift}
+  \label{fig:ejemplos}
+\end{figure}
+
+En la mayoría de entornos, la adaptabilidad de CAMShift lo hace superior en lo que a seguimiento se refiere. Sin embargo, esta mejora tiene un pequeño coste computacional. 
+
+
+En el caso que nos ocupa, dado que la cámara es fija, los objetos no se alejan ni acercan a ella, con la salvedad del balón, que aun con todo, vuelve a alejarse rápidamente y no resulta un problema para su seguimiento. Debido a esto, y para evitar un coste computacional adicional que no nos resultaría especialmente útil, se ha optado por Mean Shift como algoritmo de seguimiento por defecto.
 
 \subsection{Interfaz gráfica}
 
