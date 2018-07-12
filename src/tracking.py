@@ -35,16 +35,33 @@ class MeanShiftTracker (Tracker):
         super().__init__(roi, frame)
 
     def update(self, image, drawto):
+        # Use an image with 2x size of track window instead of full image
+        im_height, im_width = image.shape[:2]
+        (x, y, w, h) = self.track_window
+        x = max(0, x-(w//2))
+        y = max(0, y-(h//2))
+        w = min(w*2, im_width)
+        h = min(h*2, im_height)
+        image = image[y:y+h, x:x+w]
+
         # Convert to RGB and calculate backprojection
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         dst = cv2.calcBackProject([image], [0, 1, 2], self.roi_hist, [0, 255, 0, 255, 0, 255], 1)
 
+        # Get window relative to reduced image
+        new_window = (self.track_window[0] - x, self.track_window[1] - y, self.track_window[2], self.track_window[3])
+
         # Apply meanshift
-        ret, self.track_window = cv2.meanShift(dst, self.track_window, self.term_crit)
+        ret, self.track_window = cv2.meanShift(dst, new_window, self.term_crit)
+
+        # Coordinates are relative to reduced image, calculate them for full image
+        x += self.track_window[0]
+        y += self.track_window[1]
+        w = self.track_window[2]
+        h = self.track_window[3]
+        self.track_window = (x, y, w, h)
 
         # Paint rectangle
-        x, y, w, h = self.track_window
-
         drawto = cv2.rectangle(drawto, (x, y), (x + w, y + h), 255, 2)
         return drawto
 
