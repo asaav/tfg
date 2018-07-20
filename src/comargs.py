@@ -17,6 +17,7 @@ def process_args():
                         help='background subtractor method')
     parser.add_argument("-t", "--tracker", choices=['meanshift', 'camshift'], default='meanshift',
                         help='tracking method')
+    parser.add_argument("-l", "--log", help='pickle file with previous results')
 
     return parser.parse_args()
 

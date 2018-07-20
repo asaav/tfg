@@ -33,11 +33,11 @@ Para facilitar el uso de estos algoritmos, se ha hecho uso de la programación o
 El funcionamiento interno de las clases resultantes, como se ha dicho, corresponde a las propias implementaciones de OpenCV. Pasaré a explicar los fundamentos teóricos de cada uno de estos algoritmos.
 
 \subsubsection*{MOG}
-MOG, mezcla de gaussianas (\textit{Mixture of Gaussians}), fue descrito en  \cite{KaewTraKulPong2002} partiendo de otro algoritmo ya existente de Grimson \textit{et al} \cite{698583,784637,868677}. Usa un modelo de aprendizaje semiparametrizado para estimar el fondo. Ambas versiones crean un modelo del fondo en base a una mezcla de k gaussianas con $3\leq k \leq 5$, cada una de las cuales representa un color. La probabilidad de que un pixel tenga el valor $x_N$ en tiempo N es de
+MOG, mezcla de gaussianas (\textit{Mixture of Gaussians}), fue diseñado en 2002 \cite{KaewTraKulPong2002} partiendo de otro algoritmo ya existente de Grimson \textit{et al} \cite{698583,784637,868677}. Usa un modelo de aprendizaje semiparametrizado para estimar el fondo. Ambas versiones crean un modelo del fondo para cada pixel RGB en base a una mezcla de k gaussianas con $3\leq k \leq 5$, cada una de las cuales representa un color. La probabilidad de que un pixel tenga el valor $x_N$ en tiempo N es de
 \[
     p(x_N) = \sum_{j=1}^{k} w_j \mathcal{N} (x_N;\theta_j )
 \]
-donde $w_k$ es el peso de la componente guasiana k-ésima. $\theta(x;\theta_k)$ es la ecuación que define la distribución de la componente, representada por
+donde $w_k$ es el peso de la componente guasiana k-ésima. $\mathcal{N} (x;\theta_k)$ es la ecuación que define la distribución de la componente, representada por
 \[
     \mathcal{N}(x;\theta_k) = \mathcal{N}(x;\mu_k, \Sigma_k) = \frac{1}{(2\pi)^{\frac{D}{2}}|\Sigma_k|^\frac{1}{2}}e^{-\frac{1}{2}(x-\mu_k)^T\Sigma_k^{-1}(x-\mu_k)}
 \]

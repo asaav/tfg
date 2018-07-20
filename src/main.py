@@ -4,7 +4,7 @@ import sys
 import cv2
 
 from dialogue import HelpDialogue
-from imageoperations import scale_image, draw_contours, print_stats, match_contours, get_contours
+from imageoperations import scale_image, draw_contours, print_stats, match_contours, get_contours, find_ball
 from objectdetection import create_subtractor
 from tracking import create_tracker
 from comargs import process_args
@@ -41,7 +41,28 @@ def main():
     raw_frame = None
     last_contours = []
     last_ids = []
-    all_contours = []
+    all_contours = {}
+
+    if args.log:
+        with open(args.log, 'rb') as f:
+            loaded_data = pickle.load(f)
+        # TODO: implementar consistencia temporal a partir de aqui
+        previous_key = None
+        ball_count = {}
+        for key, value in loaded_data.items():
+            if previous_key is None or previous_key + 1 == int(key):
+                if str(value[2]) in ball_count:
+                    ball_count[str(value[2])] += 1
+                else:
+                    ball_count[str(value[2])] = 1
+            elif previous_key + 1 != int(key):
+                # Current key is from another play, try to find ball in current play
+                loaded_data = find_ball(ball_count, loaded_data)
+
+            previous_key = int(key)
+        loaded_data = find_ball(ball_count, loaded_data)
+    else:
+        loaded_data = None
 
     while cap.isOpened():
         if play_video:
@@ -55,35 +76,39 @@ def main():
                 frame, width, height = scale_image(frame, args.scale)
                 raw_frame = frame.copy()
 
-                # operate with frame (tracking and subtraction)
-                if len(trackers) > 0:
+                nframe = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
+                if loaded_data is None:
+                    # operate with frame (tracking and subtraction)
+                    if len(trackers) > 0:
 
-                    for t in trackers:
-                        t.update(raw_frame, frame)
+                        for t in trackers:
+                            t.update(raw_frame, frame)
 
-                processed = subtractor.apply(raw_frame)
+                    processed = subtractor.apply(raw_frame)
 
-                contours = get_contours(processed)
-                cont_ids = match_contours(last_contours, contours, last_ids)
-                frame, ball_id = draw_contours(frame, cont_ids, contours)
+                    contours = get_contours(processed)
+                    cont_ids = match_contours(last_contours, contours, last_ids)
+                    frame, ball_id = draw_contours(frame, cont_ids, contours)
 
-                if action:
-                    nframe = cap.get(cv2.CAP_PROP_POS_FRAMES)
-                    for i, c in enumerate(contours):
-                        (x, y, w, h) = cv2.boundingRect(c)
-                        cont_id = cont_ids[i]
-                        log.write('{0};{1};{2};{3}\n'.format(nframe, (x, y), cont_id, cont_id == ball_id))
-                        all_contours.append((nframe, contours, contours, ball_id))
+                    if action:
+                        for i, c in enumerate(contours):
+                            (x, y, w, h) = cv2.boundingRect(c)
+                            cont_id = cont_ids[i]
+                            log.write('{0};{1};{2};{3}\n'.format(nframe, (x, y), cont_id, cont_id == ball_id))
+                            all_contours[str(nframe)] = [cont_ids, contours, ball_id]
+                    last_ids = cont_ids
+                    last_contours = contours
+                    cv2.imshow('processed', processed)
+                elif str(nframe) in loaded_data:
+                    frame_data = loaded_data[str(nframe)]
+                    frame, ball_id = draw_contours(frame, frame_data[0], frame_data[1], frame_data[2])
 
                 # add stats
                 frame = print_stats(frame, width, height, start, cap.get(cv2.CAP_PROP_POS_MSEC), video_length)
-                last_ids = cont_ids
-                last_contours = contours
-                cv2.imshow('processed', processed)
                 cv2.imshow('original', frame)
 
         # end video if q is pressed or no frame was read
-        key = cv2.waitKey(20)
+        key = cv2.waitKey()
         if (key == ord('q')) or (not ret):
             break
         # if t is pressed, open window to select roi
@@ -112,10 +137,11 @@ def main():
             window.show()
 
     cap.release()
-    dmp = open('{0}.dmp'.format(video_name), 'wb')
-    pickle.dump(all_contours, dmp)
+    if len(all_contours) > 0:
+        dmp = open('{0}.dmp'.format(video_name), 'wb')
+        pickle.dump(all_contours, dmp)
+        dmp.close()
     log.close()
-    dmp.close()
     cv2.imwrite('backgroundModel.jpg', subtractor.getBackgroundImage())
     cv2.destroyAllWindows()
 
