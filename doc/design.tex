@@ -11,6 +11,7 @@ El desarrollo se va a centrar, como he ido aclarando, en una aplicación en Pyth
 A continuación, detallaré estas partes y cómo se ha resuelto su implementación. Las partes principales del sistema son: sustracción de fondo, seguimiento (\textit{tracking}), interfaz gráfica y métodos de consistencia temporal.
 
 \subsection{Sustracción de fondo}
+\label{sec:subtractors}
 Para empezar a detectar formas en la imagen, primero nuestro sistema tiene que ser capaz de hacer una estimación del fondo. La técnica mediante la cual se hace esto se denomina sustracción de fondo. Esta es, por tanto, una parte primordial de nuestro sistema que debe funcionar de una manera suficientemente robusta. Este debe ser capaz, además, de distinguir a las jugadoras del balón, y de etiquetar cada una de las formas de una manera consistente entre los frames del vídeo. Para lograr esta serie de objetivos, no bastará con la salida de los subtractores, sino que tendremos que procesarla con una serie de operaciones.
 
 No obstante, primero tendremos que solucionar el problema principal, la sustracción de fondo. Teniendo en cuenta que las imágenes proceden de una cámara fija y cenital, y que por tanto el fondo siempre va a ser exactamente el mismo, una primera aproximación ingenua a este problema podría ser tan simple como realizar una diferencia entre los frames del video, usando como referencia un frame donde se vea solamente el campo sin ninguna jugadora sobre él.
@@ -243,7 +244,11 @@ La primera de ellas es la \textbf{supresión de no máximos}. En ciertos momento
 
 La segunda operación es el \textbf{test de circularidad}, el cual nos sirve para saber cuál de las formas detectadas en la imagen es el balón. Para ello, calculamos el coeficiente de circularidad $C =  \frac{4*\pi*\acute{a}rea}{per\acute{\imath}metro^2}$. Cuanto mayor sea $C$, mayor probabilidad de que la forma sea la de un círculo, es decir, la del balón. En un frame cualquiera, la forma cuyo coeficiente $C$ tenga un valor mayor de 0.6 y sea el mayor de todos los contornos detectados, se marcará en rojo en la imagen de salida, mientras que el resto se marcarán en verde.
 
-La última de las operaciones que se realizan es el \textbf{etiquetado de los contornos} detectados. Esto es importante ya que, de un frame a otro, no tenemos una manera rápida de saber qué contorno del frame actual corresponde con qué contorno del anterior. Para solucionar esta problemática, en el primer frame se da una etiqueta a todos los contornos que se detecta. A partir de aquí, se aplica una técnica denominada ``matching mutuo'', en los siguientes frames se irá etiquetando en base a un emparejamiento mutuo entre los contornos, calculando una matriz de distancias de todos los contornos entre sí. Una vez calculada esta matriz, si para un contorno $c$, su más cercano es otro contorno $k$ y si para $k$ el más cercano es $c$, esto quiere decir que son el mismo contorno. En caso de quedar contornos sin pareja después de esto, simplemente se les da una etiqueta nueva.
+La última de las operaciones que se realizan es el \textbf{etiquetado de los contornos} detectados. Esto será importante de cara a la salida por CSV, que será util, por ejemplo, con el fin de extraer estadísticas.
+
+Este etiquetado no es trivial, ya que de un frame a otro, no tenemos una manera rápida de saber qué contorno del frame actual corresponde con qué contorno del anterior, porque OpenCV no nos asegura ningún tipo de orden en la salida del sustractor. Para solucionar esta problemática, en el primer frame se da una etiqueta a todos los contornos que se detecta. A partir de aquí, se aplica una técnica denominada ``matching mutuo'', en los siguientes frames se irá etiquetando en base a un emparejamiento mutuo entre los contornos, calculando una matriz de distancias de todos los contornos entre sí. 
+
+Una vez calculada esta matriz, si para un contorno $c$, su más cercano es otro contorno $k$ y si para $k$ el más cercano es $c$, esto quiere decir que son el mismo contorno. En caso de quedar contornos sin pareja después de esto, simplemente se les da una etiqueta nueva.
 
 \subsubsection*{Comparativa entre algoritmos}
 
@@ -402,13 +407,15 @@ A la hora de analizar los FPS obtenidos con cada uno de los algoritmos, debe acl
 En la tabla \ref{tab:2} pueden verse los resultados haciendo seguimiento de las 12 jugadoras en escena, tanto con la optimización descrita como sin ella, con una escala de 0.8 en el tamaño de imagen (nuevamente, suponiendo que escala 1 es resolución 1920x1080) y funcionando sobre CPU Intel i7 6700k. Como hemos dicho, CAMShift es un poco más lento que Mean Shift, aunque la diferencia en FPS no es demasiado notable.
 
 \subsection{Consistencia temporal y generación de CSV}
-Otro de los puntos importantes del trabajo es el de hacer que la detección sea consistente entre jugadas, así como que el programa sea capaz de generar un archivo CSV con la información de estas.
+Otro de los puntos importantes del trabajo es el de hacer que la detección sea consistente entre jugadas, así como que el programa sea capaz de generar un archivo CSV con la información de estas. Para lograr este fin, vamos a aplicar un modelo temporal más o menos rudimentario, aunque en el futuro se podrían utilizar modelos de Markov.
 
-La detección de jugadas es manual: se realiza pulsando una tecla para el inicio de la jugada y volverla a pulsar para marcar el final. Durante los frames que dure una jugada, se almacenan la lista de contornos, los ID asignados a cada uno y la ID del contorno que el programa identifica como pelota en tuplas. Al acabar de procesar el vídeo, se almacenan dos archivos: el diccionario en crudo (indexado por número de frame) resultante de las tuplas descritas, usando el método pickle de Python, y un CSV que contiene una entrada por cada contorno detectado con el frame al que corresponde su posición, su ID y un booleano que indica si es la pelota o no.
+Lo primero para ser capaces de hacer nuestro modelo temporal es ser capaces de determinar cuándo empiezan y acaban las jugadas, que es de donde vamos a extraer los datos. En este caso, por simpleza de implementación, la detección de jugadas es manual: se realiza pulsando una tecla para el inicio de la jugada y volverla a pulsar para marcar el final. 
 
-Una vez obtenidos los datos, existe la posibilidad de volver a ejecutar el programa pasándole el archivo que contiene el diccionario. Al iniciar esta segunda pasada, se cuentan en cada jugada todas las ID que han sido marcadas como pelota. De todas ellas, nos quedamos con las que tienen más de 5 ocurrencias, esta conjunto lo podemos llamar $balon_{ID}$. Cualquiera de estas ID sería válida para marcar el balón durante toda la jugada, pero por lógica usaremos la menor, de ahora en adelante denominada $ID_0$.
+Durante los frames que dure una jugada, se almacena la lista de contornos, los ID asignados a cada uno y la ID del contorno que el programa identifica como pelota en tuplas. Al acabar de procesar el vídeo, se almacenan dos archivos: el diccionario en crudo (indexado por número de frame) resultante de las tuplas descritas, usando el método \textit{pickle} de Python, y un CSV que contiene una entrada por cada contorno detectado con el frame al que corresponde su posición, su ID y un booleano que indica si es la pelota o no.
 
-En cada frame de la jugada, se revisa cuál es la ID que se ha marcado como balón. En caso de que en un frame no se encuentre marcado como balón $ID_0$, se comprueba si la ID es alguna de las contenidas en $balon_{ID}$. En caso de que sea así, se sustituye dicha ID por $ID_0$ en la tupla correspondiente a ese frame. En caso de que la ID considerada balón por el sustractor de fondo sea cualquier otro número (o incluso si no hay ninguna ID marcada como balón) se comprueba si existe alguna ID perteneciente a $balon_{ID}$ en la escena, y si se encuentra alguno, se sustituye por $ID_0$ y se marca esta como balón.
+Una vez obtenidos los datos, tenemos la posibilidad de volver a ejecutar el programa pasándole el archivo que contiene el diccionario. Al iniciar esta segunda pasada, se cuentan en cada frame de la jugada las ID que han sido marcadas como pelota. De todas ellas, nos quedamos con las que tienen más de 10 ocurrencias, a este conjunto lo llamaremos $balon_{ID}$. Cualquiera de estas ID sería válida para marcar el balón durante toda la jugada, pero usaremos la menor ya que es la que antes aparece en el vídeo, de ahora en adelante denominada $ID_0$.
+
+Después de hacer este conteo, se vuelve a iterar sobre el conjunto de frames de la jugada. En cada uno, se revisa cuál es la ID que se ha marcado como balón. En caso de que en un frame no se encuentre marcado como balón $ID_0$, se comprueba si la ID es alguna de las contenidas en $balon_{ID}$. En caso de que sea así, se sustituye dicha ID por $ID_0$ en la tupla correspondiente a ese frame. En caso de que la ID considerada balón por el sustractor de fondo sea cualquier otro número (o incluso si no hay ninguna ID marcada como balón) se comprueba si existe alguna ID perteneciente a $balon_{ID}$ en la escena, y si se encuentra alguno, se sustituye por $ID_0$ y se marca esta como balón.
 
 \begin{figure}
 \begin{subfigure}{.5\textwidth}
@@ -427,9 +434,80 @@ En cada frame de la jugada, se revisa cuál es la ID que se ha marcado como bal�
 \label{fig:cons}
 \end{figure}
 
-
 En la figura \ref{fig:cons} podemos ver la diferencia de resultados entre la primera pasada y tras aplicar la heurística descrita anteriormente, la pelota aparece marcada correctamente, mientras que en el frame original en la primera pasada no había ningún contorno marcado como pelota. Además, como en la segunda pasada no necesitamos ejecutar en cada frame la actualización del sustractor de fondo ya que los datos proceden de la pasada anterior, se puede apreciar una mejora significativa de la cifra de FPS.
 
+Respecto al CSV final, un fragmento de la salida sería el siguiente:
+\begin{lstlisting}
+FRAME NUMBER;POSITION;ID;BALL
+808;(818, 573);37;False
+808;(960, 537);62;False
+808;(703, 531);108;True
+808;(1094, 485);51;False
+808;(696, 492);26;False
+808;(69, 471);99;False
+808;(998, 433);59;False
+808;(672, 415);35;False
+808;(390, 410);29;False
+808;(389, 395);110;False
+808;(701, 380);86;False
+808;(744, 309);42;False
+808;(955, 282);33;False
+808;(390, 270);24;False
+\end{lstlisting}
+
 \subsection{Descripción del software final}
+
+El software desarrollado ofrece dos interfaces posibles al usuario final, ambas con la misma funcionalidad. La primera de estas interfaces es la interfaz por consola, la cual se maneja mediante parámetros por línea de comandos, mientras que la segunda es una interfaz gráfica desarrollada usando PyQt.
+
+Dado que, como hemos dicho, ambas ofrecen la misma funcionalidad, el uso de una u otra es simplemente una preferencia personal del usuario en cuestión.
+
+\subsubsection*{Interfaz por consola}
+Esta interfaz usa las ventanas estándar de OpenCV (las que pueden verse en la figura \ref{fig:ventanas}) para mostrar el vídeo así como la imagen binarizada que actúa como salida del sustractor de fondo. Para el manejo de parámetros se ha usado el paquete \textit{comargs} que ofrece Python, que permite definir parámetros opcionales, parámetros con número limitado de opciones, etc.
+
+En el caso de esta interfaz, el vídeo se pasa como argumento al ejecutar el programa por línea de comandos. Los parámetros con los que cuenta el programa son:
+
+\begin{itemize}
+  \item \textbf{Escala de imagen}: Mediante la opción -s y un factor entre 0 y 1, podemos controlar la escala a la que se procesan y muestran las imágenes del vídeo original. Por ejemplo, un factor de $0,5$ significaría que el vídeo original se reduce a la mitad de su tamaño antes de procesar
+  \item \textbf{Método de sustracción de fondo}: Usando la opción -b se puede seleccionar un método de sustracción de fondo entre todos los expuestos en la sección \ref{sec:subtractors}. En caso de no especificar ninguno, el programa usa el método recomendado (MOG2)
+  \item \textbf{Método de tracking}: Podemos seleccionar entre Mean Shift o CAMShift usando la opción -t. De la misma manera que antes, la opción por defecto es Mean Shift.
+\end{itemize}
+
+\begin{figure}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.9\linewidth]{images/original}
+  \caption { }
+  \label{fig:ventanaoriginal}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.9\linewidth]{images/processed}
+  \caption { }
+  \label{fig:ventanaprocessed}
+\end{subfigure}
+\caption{Ventanas estándar de OpenCV en la interfaz por consola del vídeo (a) y del sustractor de fondo (b) }
+\label{fig:ventanas}
+\end{figure}
+
+Durante la ejecución del programa, puede pausarse el vídeo pulsando la tecla espacio, así como avanzarlo o retrocederlo 5 segundos, usando las teclas K y L respectivamente. Al iniciarse, el programa automáticamente empieza a aplicar el método de sustracción de fondo especificado por parámetro, y pueden verse en la ventana principal recuadros verdes que corresponden con las formas detectadas por el sustractor. Una de estas formas, la marcada en rojo, corresponde con la pelota.
+
+Dado que para la inicialización de los métodos de tracking se requiere de una ventana inicial desde la que empezar a hacer el seguimiento, en caso de querer usar esta técnica se debe pulsar la tecla T, que hace que se abra una ventana (figura \ref{fig:iniciatracking}) para elegir las regiones iniciales del seguimiento.
+
+Las jugadas, como hemos dicho anteriormente, se detectan de manera manual, por lo que al pulsar la tecla J el programa iniciará el registro de la jugada y lo terminará al volver a pulsar dicha tecla. Al salir del programa se generarán el fichero CSV y un archivo DMP que es el que se usará para la ejecución de la consistencia temporal, pasándolo por parámetro con la opción -l
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.8\textwidth]{images/ejemplotracking}
+    \caption{Ventana de selección de regiones de interés para tracking}
+    \label{fig:iniciatracking}
+\end{figure}
+
+Un ejemplo de ejecución usando esta interfaz seria el siguiente:
+\begin{lstlisting}[language=bash]
+  ./main.py <Ruta/Al/Video/set_01.avi> -s 0.8 -b MOG2 -l set_01.dmp
+\end{lstlisting}
+
+
+\subsubsection*{Interfaz gráfica}
 
 

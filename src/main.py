@@ -112,7 +112,7 @@ def main():
                 cv2.imshow('original', frame)
 
         # end video if q is pressed or no frame was read
-        key = cv2.waitKey()
+        key = cv2.waitKey(20)
         if (key == ord('q')) or (not ret):
             break
         # if t is pressed, open window to select roi
