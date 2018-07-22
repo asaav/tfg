@@ -149,27 +149,6 @@ def get_contours(subtractor_frame):
     return contours
 
 
-# def draw_contours(img, ids, contours):
-#     ball_id = None
-#     # Calculate circularity using the formula C = (4*pi*area)/(perimeter^2)
-#     roundness = []
-#     for c in contours:
-#         roundness.append(4*np.pi*cv2.contourArea(c)/cv2.arcLength(c, True)**2)
-#
-#     # Paint rectangles
-#     for index, c in enumerate(contours):
-#         if index == np.argmax(roundness) and np.max(roundness) > 0.60:
-#             (x, y, w, h) = cv2.boundingRect(c)
-#             cv2.putText(img, str(ids[index]), (x, y-5), cv2.FONT_HERSHEY_PLAIN, 0.8, (255, 255, 255))
-#             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
-#             ball_id = ids[index]
-#         else:
-#             (x, y, w, h) = cv2.boundingRect(c)
-#             cv2.putText(img, str(ids[index]), (x, y-5), cv2.FONT_HERSHEY_PLAIN, 0.8, (255, 255, 255))
-#             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-#     return img, ball_id
-
-
 def draw_contours(img, ids, contours, ball_id=None):
     if ball_id is None:
         # Calculate circularity using the formula C = (4*pi*area)/(perimeter^2)
@@ -194,15 +173,11 @@ def draw_contours(img, ids, contours, ball_id=None):
 
 
 def find_ball(ball_count, data):
-    # Find minimum id for a contour marked as ball from those with more than 15 frames marked as ball
-    print(ball_count)
-    ball_ids = [int(key) for key, value in ball_count.items() if value > 5 and key != 'None']
-    for i in ball_ids:
-        print(i)
+    # Find minimum id for a contour marked as ball from those with more than 10 frames marked as ball
+    ball_ids = [int(key) for key, value in ball_count.items() if value > 10 and key != 'None']
     min_id = min(ball_ids)
     for d in data.values():
         if d[2] != min_id:
-            print(d[2])
             if d[2] in ball_ids:
                 # Replace ball id with the min id
                 d[0] = [min_id if value == d[2] else value for value in d[0]]
@@ -210,9 +185,9 @@ def find_ball(ball_count, data):
             elif d[2] not in ball_ids:
                 # Check if one of the ids is already in our list
                 contained = [value for value in ball_ids if value in d[0]]
+                # if the id is not our min id, replace it
                 if len(contained) == 1 and contained[0] != min_id:
                     d[0] = [min_id if value == contained[0] else value for value in d[0]]
                 d[2] = min_id
-            print(str(d[2]) + '\n')
 
     return data

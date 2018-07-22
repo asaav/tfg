@@ -28,8 +28,7 @@ def main():
     video_length = cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS)
     trackers = []
     subtractor = create_subtractor(args.backsub, args.scale)
-    log = open('{0}.log'.format(video_name), 'w')
-    log.write("FRAME NUMBER;POSITION;ID;BALL\n")
+    log = None
     if not cap.isOpened():
         print(sys.argv[1] + " couldn't be opened.",
               file=sys.stderr)
@@ -46,20 +45,22 @@ def main():
     if args.log:
         with open(args.log, 'rb') as f:
             loaded_data = pickle.load(f)
-        # TODO: implementar consistencia temporal a partir de aqui
         previous_key = None
         ball_count = {}
+
         for key, value in loaded_data.items():
+            # If first key or if this key belongs to the same play
             if previous_key is None or previous_key + 1 == int(key):
                 if str(value[2]) in ball_count:
                     ball_count[str(value[2])] += 1
                 else:
                     ball_count[str(value[2])] = 1
             elif previous_key + 1 != int(key):
-                # Current key is from another play, try to find ball in current play
+                # Current key is from another play, try to find ball in previous play
                 loaded_data = find_ball(ball_count, loaded_data)
-
             previous_key = int(key)
+
+        # Find ball for the last play
         loaded_data = find_ball(ball_count, loaded_data)
     else:
         loaded_data = None
@@ -91,6 +92,9 @@ def main():
                     frame, ball_id = draw_contours(frame, cont_ids, contours)
 
                     if action:
+                        if log is None:
+                            log = open('{0}.log'.format(video_name), 'w')
+                            log.write("FRAME NUMBER;POSITION;ID;BALL\n")
                         for i, c in enumerate(contours):
                             (x, y, w, h) = cv2.boundingRect(c)
                             cont_id = cont_ids[i]
@@ -108,7 +112,7 @@ def main():
                 cv2.imshow('original', frame)
 
         # end video if q is pressed or no frame was read
-        key = cv2.waitKey(20)
+        key = cv2.waitKey()
         if (key == ord('q')) or (not ret):
             break
         # if t is pressed, open window to select roi
@@ -141,7 +145,8 @@ def main():
         dmp = open('{0}.dmp'.format(video_name), 'wb')
         pickle.dump(all_contours, dmp)
         dmp.close()
-    log.close()
+    if log is not None:
+        log.close()
     cv2.imwrite('backgroundModel.jpg', subtractor.getBackgroundImage())
     cv2.destroyAllWindows()
 

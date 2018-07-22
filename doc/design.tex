@@ -392,8 +392,8 @@ A la hora de analizar los FPS obtenidos con cada uno de los algoritmos, debe acl
   \centering
   \begin{tabular}{|l|c|l|}\hline
   \textbf{Método} & \multicolumn{1}{m{4cm}|}{\textbf{FPS usando imagen completa}}&  \multicolumn{1}{m{4cm}|}{\textbf{FPS usando secciones de imagen}}\\\hline
-  Mean Shift & 15 ( ms) & 32 ( ms) \\\hline
-  CAMShift & 13 ( ms)& 30 ( ms)\\\hline
+  Mean Shift & 15 (66 ms) & 32 (31 ms) \\\hline
+  CAMShift & 13 (76 ms)& 30 (33 ms)\\\hline
   \end{tabular}
 \caption{}
 \label{tab:2}
@@ -402,6 +402,33 @@ A la hora de analizar los FPS obtenidos con cada uno de los algoritmos, debe acl
 En la tabla \ref{tab:2} pueden verse los resultados haciendo seguimiento de las 12 jugadoras en escena, tanto con la optimización descrita como sin ella, con una escala de 0.8 en el tamaño de imagen (nuevamente, suponiendo que escala 1 es resolución 1920x1080) y funcionando sobre CPU Intel i7 6700k. Como hemos dicho, CAMShift es un poco más lento que Mean Shift, aunque la diferencia en FPS no es demasiado notable.
 
 \subsection{Consistencia temporal y generación de CSV}
+Otro de los puntos importantes del trabajo es el de hacer que la detección sea consistente entre jugadas, así como que el programa sea capaz de generar un archivo CSV con la información de estas.
+
+La detección de jugadas es manual: se realiza pulsando una tecla para el inicio de la jugada y volverla a pulsar para marcar el final. Durante los frames que dure una jugada, se almacenan la lista de contornos, los ID asignados a cada uno y la ID del contorno que el programa identifica como pelota en tuplas. Al acabar de procesar el vídeo, se almacenan dos archivos: el diccionario en crudo (indexado por número de frame) resultante de las tuplas descritas, usando el método pickle de Python, y un CSV que contiene una entrada por cada contorno detectado con el frame al que corresponde su posición, su ID y un booleano que indica si es la pelota o no.
+
+Una vez obtenidos los datos, existe la posibilidad de volver a ejecutar el programa pasándole el archivo que contiene el diccionario. Al iniciar esta segunda pasada, se cuentan en cada jugada todas las ID que han sido marcadas como pelota. De todas ellas, nos quedamos con las que tienen más de 5 ocurrencias, esta conjunto lo podemos llamar $balon_{ID}$. Cualquiera de estas ID sería válida para marcar el balón durante toda la jugada, pero por lógica usaremos la menor, de ahora en adelante denominada $ID_0$.
+
+En cada frame de la jugada, se revisa cuál es la ID que se ha marcado como balón. En caso de que en un frame no se encuentre marcado como balón $ID_0$, se comprueba si la ID es alguna de las contenidas en $balon_{ID}$. En caso de que sea así, se sustituye dicha ID por $ID_0$ en la tupla correspondiente a ese frame. En caso de que la ID considerada balón por el sustractor de fondo sea cualquier otro número (o incluso si no hay ninguna ID marcada como balón) se comprueba si existe alguna ID perteneciente a $balon_{ID}$ en la escena, y si se encuentra alguno, se sustituye por $ID_0$ y se marca esta como balón.
+
+\begin{figure}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.9\linewidth]{images/noconsistencia}
+  \caption { }
+  \label{fig:consa}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.9\linewidth]{images/consistencia}
+  \caption { }
+  \label{fig:consb}
+\end{subfigure}
+\caption{Imagen antes (a) y después (b) de aplicar la técnica de consistencia temporal descrita}
+\label{fig:cons}
+\end{figure}
+
+
+En la figura \ref{fig:cons} podemos ver la diferencia de resultados entre la primera pasada y tras aplicar la heurística descrita anteriormente, la pelota aparece marcada correctamente, mientras que en el frame original en la primera pasada no había ningún contorno marcado como pelota. Además, como en la segunda pasada no necesitamos ejecutar en cada frame la actualización del sustractor de fondo ya que los datos proceden de la pasada anterior, se puede apreciar una mejora significativa de la cifra de FPS.
 
 \subsection{Descripción del software final}
 
