@@ -16,7 +16,7 @@ Una vez hecho esto, las posiciones de los jugadores y del balón deberían queda
 Para hacer esta división por jugadas, lo ideal es que el sistema lo haga de forma automática, aunque también podría hacerlo un operario mediante pulsaciones de teclas o mediante el uso de una posible interfaz gráfica.
 
 \subsection{Instalación de cámara en el pabellón}
-Un aspecto primordial para este proyecto era la instalación de una cámara que proporcionase las imágenes descritas en la sección anterior. Dicha cámara es un modelo AXIS P1365-E Mk II (figura \ref{fig:camara}, cuyas características, según su ficha técnica, son:
+Un aspecto primordial para este proyecto era la instalación de una cámara que proporcionase las imágenes descritas en la sección anterior. Dicha cámara es un modelo AXIS P1365-E Mk II (figura \ref{fig:camara}), cuyas características, según su ficha técnica, son:
 
 \begin{figure}
     \centering
@@ -32,20 +32,27 @@ Un aspecto primordial para este proyecto era la instalación de una cámara que 
     \item Vídeo a 1080p y hasta 60 fps
 \end{itemize}
 
-En nuestro caso, la cámara graba a 1080p y 30fps, con un ancho de banda de 100 Mbps en la transferencia de vídeo. Se conecta mediante power over ethernet. El objetivo de la cámara cuenta con zoom óptico variable, con un field of view entre 35-107º en horizontal y 19-67º en vertical. Con el fov máximo, el rango de metros visibles en horizontal es de $2.7\cdot altura_{cam}$. El techo del pabellón es de 10.1 metros, con lo cual el rango máximo de la cámara es de 27,27 metros. En vertical, el rango máximo es de $1.3 \cdot altura_{cam}$, lo que nos da 13,13 metros de rango vertical.
+En nuestro caso, la cámara graba a 1080p y 30fps, con un ancho de banda de 100 Mbps en la transferencia de vídeo. Se conecta mediante power over ethernet. El objetivo de la cámara cuenta con zoom óptico variable, con un \textit{field of view} entre 35-107º en horizontal y 19-67º en vertical. Usando el fov máximo y considerando los dos triángulos rectángulos formados por la vertical de la cámara, el campo y el ángulo de apertura de esta:
+\[
+    2 \cdot \tan(\frac{107}{2} \cdot \frac{\pi}{180}) = 2.70
+\]
+el rango de metros visibles en horizontal es de $2.7\cdot altura_{cam}$. El techo del pabellón es de 10,1 metros, con lo cual el rango máximo de la cámara es de 27,27 metros. En vertical, usando la misma fórmula, el rango máximo es de $1.3 \cdot altura_{cam}$, lo que nos da 13,13 metros de rango vertical.
 
 \begin{figure}
-    \centering
-    \includegraphics[width=0.5\textwidth]{images/EduardoLinares}
-    \caption{Exterior del pabellón Eduardo Linares}
-    \label{fig:pabellon}
-\end{figure}
-
-\begin{figure}
-    \centering
-    \includegraphics[width=0.5\textwidth]{images/EduardoLinaresDentro}
-    \caption{Interior del pabellón Eduardo Linares}
-    \label{fig:pabellonDentro}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.9\linewidth]{images/EduardoLinares}
+  \caption { }
+  \label{fig:pabellonFuera}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.9\linewidth]{images/EduardoLinaresDentro}
+  \caption { }
+  \label{fig:pabellonDentro}
+\end{subfigure}
+\caption{Fotos del exterior (a) y del interior (b) del pabellón Eduardo Linares }
+\label{fig:pabellon}
 \end{figure}
 
 El pabellón en el que se ha instalado la cámara, previo permiso del Ayuntamiento, es el Eduardo Linares, en Molina de Segura, perteneciente al instituto de Enseñanza Secundaria Eduardo Linares.
@@ -71,4 +78,4 @@ El uso de Git (o cualquier VCS) es, en mi opinión, indispensable por pequeña q
 \subsection*{PyQt}
 PyQt es una adaptación multiplataforma de la librería gráfica Qt. Esta librería está desarrollada por la compañía inglesa Riverbank Computing. PyQt cuenta con toda la funcionalidad de programación de aplicaciones gráficas disponible en la librería de la que proviene.
 
-PyQt ha facilitado en gran medida la programación de una interfaz gráfica, lo que es interesante de cara a facilitar el uso de la aplicación al usuario medio
+PyQt ha facilitado en gran medida la programación de una interfaz gráfica, lo que es interesante de cara a facilitar el uso de la aplicación al usuario medio.
