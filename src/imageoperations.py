@@ -155,7 +155,7 @@ def draw_contours(img, ids, contours, ball_id=None):
         roundness = []
         for c in contours:
             roundness.append(4 * np.pi * cv2.contourArea(c) / cv2.arcLength(c, True) ** 2)
-        if np.max(roundness) > 0.70:
+        if roundness and np.max(roundness) > 0.70:
             ball_id = ids[np.argmax(roundness)]
 
     # Paint rectangles
@@ -173,21 +173,22 @@ def draw_contours(img, ids, contours, ball_id=None):
 
 
 def find_ball(ball_count, data):
-    # Find minimum id for a contour marked as ball from those with more than 10 frames marked as ball
-    ball_ids = [int(key) for key, value in ball_count.items() if value > 10 and key != 'None']
-    min_id = min(ball_ids)
+    # Find minimum id for a contour marked as ball from those with more than 4 consecutive frames marked as ball
+    ball_ids = [int(key) for key, value in ball_count.items() if value > 4 and key != 'None']
+    ball_id = max(ball_count, key=ball_count.get)
     for d in data.values():
-        if d[2] != min_id:
+        if d[2] != ball_id:
             if d[2] in ball_ids:
                 # Replace ball id with the min id
-                d[0] = [min_id if value == d[2] else value for value in d[0]]
-                d[2] = min_id
+                d[0] = [ball_id if value == d[2] else value for value in d[0]]
+                d[2] = ball_id
             elif d[2] not in ball_ids:
                 # Check if one of the ids is already in our list
                 contained = [value for value in ball_ids if value in d[0]]
                 # if the id is not our min id, replace it
-                if len(contained) == 1 and contained[0] != min_id:
-                    d[0] = [min_id if value == contained[0] else value for value in d[0]]
-                d[2] = min_id
+                if len(contained) == 1:
+                    if contained[0] != ball_id:
+                        d[0] = [ball_id if value == contained[0] else value for value in d[0]]
+                    d[2] = ball_id
 
     return data

@@ -46,19 +46,27 @@ def main():
         with open(args.log, 'rb') as f:
             loaded_data = pickle.load(f)
         previous_key = None
+        previous_value = None
         ball_count = {}
+        consecutive_count = 1
 
         for key, value in loaded_data.items():
             # If first key or if this key belongs to the same play
             if previous_key is None or previous_key + 1 == int(key):
-                if str(value[2]) in ball_count:
-                    ball_count[str(value[2])] += 1
+                if previous_value is None or previous_value[2] == value[2]:
+                    consecutive_count += 1
                 else:
-                    ball_count[str(value[2])] = 1
+                    if str(previous_value[2]) not in ball_count:
+                        ball_count[str(previous_value[2])] = consecutive_count
+                    elif consecutive_count > ball_count[str(previous_value[2])]:
+                        ball_count[str(previous_value[2])] = consecutive_count
+                    consecutive_count = 1
             elif previous_key + 1 != int(key):
                 # Current key is from another play, try to find ball in previous play
+                pass
                 loaded_data = find_ball(ball_count, loaded_data)
             previous_key = int(key)
+            previous_value = loaded_data[str(previous_key)]
 
         # Find ball for the last play
         loaded_data = find_ball(ball_count, loaded_data)
