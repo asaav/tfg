@@ -150,9 +150,9 @@ def get_contours(subtractor_frame):
 
 
 def draw_contours(img, ids, contours, ball_id=None):
+    roundness = []
     if ball_id is None:
         # Calculate circularity using the formula C = (4*pi*area)/(perimeter^2)
-        roundness = []
         for c in contours:
             roundness.append(4 * np.pi * cv2.contourArea(c) / cv2.arcLength(c, True) ** 2)
         if roundness and np.max(roundness) > 0.70:
@@ -169,13 +169,14 @@ def draw_contours(img, ids, contours, ball_id=None):
             (x, y, w, h) = cv2.boundingRect(c)
             cv2.putText(img, str(ids[index]), (x, y - 5), cv2.FONT_HERSHEY_PLAIN, 0.8, (255, 255, 255))
             cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-    return img, ball_id
+    return img, ball_id, roundness
 
 
 def find_ball(ball_count, data):
+
     # Find minimum id for a contour marked as ball from those with more than 4 consecutive frames marked as ball
-    ball_ids = [int(key) for key, value in ball_count.items() if value > 4 and key != 'None']
-    ball_id = max(ball_count, key=ball_count.get)
+    ball_ids = [int(key) for key, value in ball_count.items() if value >= 4 and key != 'None']
+    ball_id = int(max(ball_count, key=ball_count.get))
     for d in data.values():
         if d[2] != ball_id:
             if d[2] in ball_ids:
@@ -191,4 +192,42 @@ def find_ball(ball_count, data):
                         d[0] = [ball_id if value == contained[0] else value for value in d[0]]
                     d[2] = ball_id
 
+    locating_ball = False
+    located_ball = None
+    previous = None
+    for k, d in data.items():
+        # Get last frame tuple
+        if str(int(k) - 1) in data:
+            previous = data[str(int(k) - 1)]
+
+        # If the ball doesn't appear anymore or the selected id appears, stop searching
+        if located_ball is not None and (located_ball not in d[0] or ball_id in d[0]):
+            located_ball = None
+            locating_ball = False
+
+        # If not currently searching and the selected ball id is not in current frame but it is in the last one,
+        # start searching
+        if previous is not None and ball_id not in d[0] and ball_id in previous[0] and not locating_ball:
+            last_position = previous[1][previous[0].index(ball_id)]
+            locating_ball = True
+        if locating_ball and located_ball is None:
+            # In subsequent frames, get every contour within 170 pixels and with more than 0.5 roundness
+            # making sure they don't appear in the last frame
+            near_ids = [possible_id for i, possible_id in enumerate(d[0])
+                        if contour_distance(last_position, d[1][i]) < 170
+                        and d[3][i] > 0.5
+                        and possible_id not in previous[0]]
+            # Once located, if we have more than one contour, get the one with more roundness (more likely to be ball)
+            if len(near_ids) > 1:
+                roundness = []
+                for value in near_ids:
+                    i = d[0].index(value)
+                    roundness.append(d[3][i])
+                located_ball = near_ids[np.argmax(roundness)]
+            elif len(near_ids) == 1:
+                located_ball = near_ids[0]
+        # Replace id with the one selected by algorithm
+        if located_ball is not None:
+            d[0] = [ball_id if value == located_ball else value for value in d[0]]
+            d[2] = ball_id
     return data

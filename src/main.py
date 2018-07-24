@@ -50,6 +50,15 @@ def main():
         ball_count = {}
         consecutive_count = 1
 
+        # Fix values that changed only during a frame, returning them to the more stable values
+        for k, v in loaded_data.items():
+            if str(int(k) - 1) in loaded_data and str(int(k) + 1) in loaded_data:
+                previousval = loaded_data[str(int(k) - 1)]
+                nextval = loaded_data[str(int(k) + 1)]
+                if nextval[2] == previousval[2] and nextval[2] is not None:
+                    v[2] = nextval[2]
+
+        # Determine ball from contours marked consecutively as it
         for key, value in loaded_data.items():
             # If first key or if this key belongs to the same play
             if previous_key is None or previous_key + 1 == int(key):
@@ -70,6 +79,8 @@ def main():
 
         # Find ball for the last play
         loaded_data = find_ball(ball_count, loaded_data)
+
+
     else:
         loaded_data = None
 
@@ -97,7 +108,7 @@ def main():
 
                     contours = get_contours(processed)
                     cont_ids = match_contours(last_contours, contours, last_ids)
-                    frame, ball_id = draw_contours(frame, cont_ids, contours)
+                    frame, ball_id, roundness = draw_contours(frame, cont_ids, contours)
 
                     if action:
                         if log is None:
@@ -107,13 +118,13 @@ def main():
                             (x, y, w, h) = cv2.boundingRect(c)
                             cont_id = cont_ids[i]
                             log.write('{0};{1};{2};{3}\n'.format(nframe, (x, y), cont_id, cont_id == ball_id))
-                            all_contours[str(nframe)] = [cont_ids, contours, ball_id]
+                            all_contours[str(nframe)] = [cont_ids, contours, ball_id, roundness]
                     last_ids = cont_ids
                     last_contours = contours
                     cv2.imshow('processed', processed)
                 elif str(nframe) in loaded_data:
                     frame_data = loaded_data[str(nframe)]
-                    frame, ball_id = draw_contours(frame, frame_data[0], frame_data[1], frame_data[2])
+                    frame, ball_id, roundness = draw_contours(frame, frame_data[0], frame_data[1], frame_data[2])
 
                 # add stats
                 frame = print_stats(frame, width, height, start, cap.get(cv2.CAP_PROP_POS_MSEC), video_length)
