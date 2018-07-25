@@ -48,6 +48,10 @@
 %\usepackage[breaklinks]{hyperref}
 %\def\UrlBreaks{\do\/\do-}
 
+\newfloat{lstfloat}{htbp}{lop}
+\floatname{lstfloat}{Código}
+\def\lstfloatautorefname{Código}
+
 %%%%% Figuras y punto en vez de dos puntos
 \usepackage{wrapfig}
 \usepackage{caption}
@@ -126,48 +130,10 @@ literate=*{0}{{\FormatDigit{0}}}{1}%
 ,%
 }
 
-\lstset{%
-backgroundcolor=\color{mywhite},
-basicstyle=\footnotesize,
-breakatwhitespace=false,
-breaklines=true,
-captionpos=b,
-commentstyle=\color{red},
-deletekeywords={...},
-escapeinside={\%*}{*)},
-extendedchars=true,
-frame=shadowbox,
-keepspaces=true,
-keywordstyle=\color{myorange},
-language=Octave,
-morekeywords={*,...},
-%numbers=left,
-%numbersep=5pt,
-%numberstyle=\tiny\color{mygray},
-rulecolor=\color{black},
-rulesepcolor=\color{myblue},
-showspaces=false,
-showstringspaces=false,
-showtabs=false,
-stepnumber=2,
-stringstyle=\color{myorange},
-tabsize=2,
-title=\lstname,
-emphstyle=\bfseries\color{blue},%  style for emph={}
-}
-
-
-\lstset{language=C,
-backgroundcolor=\color[gray]{0.95},% color del fondo
-frame=single,		% dibuja un borde
-columns=flexible,	% el tamaño de letra se ajusta al ancho
-extendedchars=false,
-aboveskip=1eM,
-basicstyle=\ttfamily,
-keywordstyle=\color{black}\ttfamily, %Color de las palabras clave - blue
-stringstyle=\color{black}\ttfamily, % Red
-commentstyle=\color{black}\ttfamily, % Brown
-morecomment=[l][\color{magenta}]{\#}
+\lstset{
+    frame = single,
+    breaklines=true,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
 }
 
 %%%% Encabezado y pie de pagina

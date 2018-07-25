@@ -12,7 +12,7 @@ A continuación, detallaré estas partes y cómo se ha resuelto su implementaci�
 
 \subsection{Sustracción de fondo}
 \label{sec:subtractors}
-Para empezar a detectar formas en la imagen, primero nuestro sistema tiene que ser capaz de hacer una estimación del fondo. La técnica mediante la cual se hace esto se denomina sustracción de fondo. Esta es, por tanto, una parte primordial de nuestro sistema que debe funcionar de una manera suficientemente robusta. Este debe ser capaz, además, de distinguir a las jugadoras del balón, y de etiquetar cada una de las formas de una manera consistente entre los frames del vídeo. Para lograr esta serie de objetivos, no bastará con la salida de los subtractores, sino que tendremos que procesarla con una serie de operaciones.
+Para empezar a detectar formas en la imagen, primero nuestro sistema tiene que ser capaz de hacer una estimación del fondo. La técnica mediante la cual se hace esto se denomina sustracción de fondo. Esta es, por tanto, una parte primordial de nuestro sistema que debe funcionar de una manera suficientemente robusta. Este debe ser capaz, además, de distinguir a las jugadoras del balón, y de etiquetar cada una de las formas de una manera consistente entre los frames del vídeo. Para lograr esta serie de objetivos, no bastará con la salida de los sustractores, sino que tendremos que procesarla con una serie de operaciones.
 
 No obstante, primero tendremos que solucionar el problema principal, la sustracción de fondo. Teniendo en cuenta que las imágenes proceden de una cámara fija y cenital, y que por tanto el fondo siempre va a ser exactamente el mismo, una primera aproximación ingenua a este problema podría ser tan simple como realizar una diferencia entre los frames del video, usando como referencia un frame donde se vea solamente el campo sin ninguna jugadora sobre él.
 
@@ -112,7 +112,7 @@ A partir de aquí se utiliza inferencia bayesiana para calcular la probabilidad 
 
 Siendo $p(f|B) = f_{ij}(k)^T\hat{H}_{ij}(k)$, $p(f|F) = 1 - p(f|B)$, $p(F)$ un parámetro constante que afecta a la sensibilidad del algoritmo y $p(B) = 1 - p(F)$. Una vez calculado $p(B|f)$ para cada pixel, obtenemos una imagen $P(k)$ a la que se le aplican una serie de transformaciones morfológicas de manera que se eliminen las posibles pequeñas formas anómalas que puedan detectarse y las componentes de la imagen aparezcan conectadas. Posteriormente, se aplica un umbral a la imagen para generar a partir de ella una imagen en binario que servirá como máscara y será la salida del sustractor.
 
-Por último, se debe actualizar el histograma que se usa como modelo de fondo de manera que se adapte a posibles cambios en la escena. Si un pixel está marcado como frente de la escena, el histograma para él no se actualiza. Si no, si la característica $f_{ij}(k)$ tiene peso 0 en el histograma y se ha excedido la constante $F_max$, se debe eliminar algúna característica del histograma, la de menor peso. A continuación se actualiza el histograma con la nuevo característica a añadir: $H_{ij}(k+1)=(1-\alpha)H_{ij}(k)+\alpha f_{ij}(k)$ siendo $\alpha$ el parámetro de adaptación (\textit{learning rate}) del algoritmo, y cuanto más grande sea, antes se eliminan las observaciones anteriores.
+Por último, se debe actualizar el histograma que se usa como modelo de fondo de manera que se adapte a posibles cambios en la escena. Si un pixel está marcado como frente de la escena, el histograma para él no se actualiza. Si no, si la característica $f_{ij}(k)$ tiene peso 0 en el histograma y se ha excedido la constante $F_max$, se debe eliminar alguna característica del histograma, la de menor peso. A continuación se actualiza el histograma con la nuevo característica a añadir: $H_{ij}(k+1)=(1-\alpha)H_{ij}(k)+\alpha f_{ij}(k)$ siendo $\alpha$ el parámetro de adaptación (\textit{learning rate}) del algoritmo, y cuanto más grande sea, antes se eliminan las observaciones anteriores.
 
 \begin{figure}
 \begin{subfigure}{.5\textwidth}
@@ -333,11 +333,11 @@ siendo $N(x)$ el conjunto de vecinos en $x$.
 
 La diferencia $m(x)-x$ es lo que se llama \textit{mean shift} (literalmente: desplazamiento de media) en el trabajo de Fukunaga y Hostetler. En la siguiente iteración se hace $x= m(x)$ y se repite hasta que $m(x)$ converge al mismo valor, con un cierto margen de error.
 
-Ahora bien, en el caso del seguimiento, el algoritmo se adapta a esta aplicación concreta. La ventana inicial es una región de interés de la imagen, a la cual se le calcula el histograma. En cada frame del vídeo, se calcula la retroproyección, es decir, la probabilidad de que un pixel de la imagen pertenezca a la distribución que describe el histograma inicial. Una vez calculado esto, se calcula, iterativamente, el centro de masas de los puntos localizados dentro de la ventana. Como se ha dicho antes, el algoritmo converge cuando el centroide calculado coincide con el centro de la ventana con un cierto margen de error. En la figura \ref{fig:meanshiftopencv} puede verse un diagrama de cómo se mueve la ventana en iteraciones consecutivas, hasta llegar al centro de masas
+Ahora bien, en el caso del seguimiento, el algoritmo se adapta a esta aplicación concreta. La ventana inicial es una región de interés de la imagen, a la cual se le calcula el histograma. En cada frame del vídeo, se calcula la retroproyección, es decir, la probabilidad de que un pixel de la imagen pertenezca a la distribución que describe el histograma inicial. Una vez calculado esto, se calcula, iterativamente, el centro de masas de los puntos localizados dentro de la ventana. Como se ha dicho antes, el algoritmo converge cuando el centroide calculado coincide con el centro de la ventana con un cierto margen de error. En la figura \ref{fig:meanshiftopencv} puede verse un diagrama de cómo se mueve la ventana en iteraciones consecutivas, hasta llegar al centro de masas.
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.4\textwidth]{images/meanshiftopencv}
+    \includegraphics[width=0.8\textwidth]{images/meanshift}
     \caption{Diagrama de funcionamiento de Mean Shift aplicado a tracking}
     \label{fig:meanshiftopencv}
 \end{figure}
@@ -364,7 +364,14 @@ La nueva ventana puede calcularse como
   w = \sqrt{\frac{(a+c)-\sqrt{b^2+(a-c)^2}}{2}}
 \end{gather*}
 
-El resto del método es exactamente igual que Mean Shift, se hace uso de un histograma y retroproyecciones para calcular el centro de la ventana. Por ello, el resultado obtenido es igualmente bueno con la ventaja de que se adapta a cambios de tamaño en los objetos de la escena. Sin embargo, CAMShift es ligeramente más costoso de procesar, debido a los cálculos necesarios para hallar las medidas de la ventana.
+El resto del método es exactamente igual que Mean Shift, se hace uso de un histograma y retroproyecciones para calcular el centro de la ventana. Por ello, el resultado obtenido es igualmente bueno con la ventaja de que se adapta a cambios de tamaño en los objetos de la escena. Sin embargo, CAMShift es ligeramente más costoso de procesar, debido a los cálculos necesarios para hallar las medidas de la ventana. En la figura \ref{fig:camshiftopencv} podemos ver iteración a iteración cómo CAMShift se adapta a una cara en el caso de una imagen estática
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{images/camshift}
+    \caption{Diagrama de funcionamiento de CAMShift iteración a iteración}
+    \label{fig:camshiftopencv}
+\end{figure}
 
 Para nuestro caso, debemos ser extremadamente cuidadosos a la hora de seleccionar la ventana inicial, a fin de evitar que en caso de que dos jugadoras se acerquen, sus ventanas pasen a englobar a ambas.
 
@@ -409,13 +416,90 @@ En la tabla \ref{tab:2} pueden verse los resultados haciendo seguimiento de las 
 \subsection{Consistencia temporal y generación de CSV}
 Otro de los puntos importantes del trabajo es el de hacer que la detección sea consistente entre jugadas, así como que el programa sea capaz de generar un archivo CSV con la información de estas. Para lograr este fin, vamos a aplicar un modelo temporal más o menos rudimentario, aunque en el futuro se podrían utilizar modelos de Markov.
 
-Lo primero para ser capaces de hacer nuestro modelo temporal es ser capaces de determinar cuándo empiezan y acaban las jugadas, que es de donde vamos a extraer los datos. En este caso, por simpleza de implementación, la detección de jugadas es manual: se realiza pulsando una tecla para el inicio de la jugada y volverla a pulsar para marcar el final. 
+Dicho modelo temporal va a hacer uso de los datos del sustractor de fondo como punto de partida, centrándose exclusivamente en el balón. Como hemos explicado en secciones anteriores, durante la ejecución normal del programa, se realiza un test de circularidad sobre los contornos que detecta el sustractor de fondo para poder saber cuál de ellos es la pelota, usando el máximo valor que esté por encima de $0.70$ como criterio de selección.
 
-Durante los frames que dure una jugada, se almacena la lista de contornos, los ID asignados a cada uno y la ID del contorno que el programa identifica como pelota en tuplas. Al acabar de procesar el vídeo, se almacenan dos archivos: el diccionario en crudo (indexado por número de frame) resultante de las tuplas descritas, usando el método \textit{pickle} de Python, y un CSV que contiene una entrada por cada contorno detectado con el frame al que corresponde su posición, su ID y un booleano que indica si es la pelota o no.
+Necesitamos, primero, recabar datos de las jugadas, las cuales se detectan de manera manual mediante pulsaciones de teclas. Con estos datos, podemos hacer una segunda pasada sobre el vídeo con el objetivo de que la pelota mantenga siempre el mismo ID durante toda la jugada. El proceso para esto lo describiremos a continuación.
 
-Una vez obtenidos los datos, tenemos la posibilidad de volver a ejecutar el programa pasándole el archivo que contiene el diccionario. Al iniciar esta segunda pasada, se cuentan en cada frame de la jugada las ID que han sido marcadas como pelota. De todas ellas, nos quedamos con las que tienen más de 10 ocurrencias, a este conjunto lo llamaremos $balon_{ID}$. Cualquiera de estas ID sería válida para marcar el balón durante toda la jugada, pero usaremos la menor ya que es la que antes aparece en el vídeo, de ahora en adelante denominada $ID_0$.
+\subsubsection*{Estructura de datos utilizada}
 
-Después de hacer este conteo, se vuelve a iterar sobre el conjunto de frames de la jugada. En cada uno, se revisa cuál es la ID que se ha marcado como balón. En caso de que en un frame no se encuentre marcado como balón $ID_0$, se comprueba si la ID es alguna de las contenidas en $balon_{ID}$. En caso de que sea así, se sustituye dicha ID por $ID_0$ en la tupla correspondiente a ese frame. En caso de que la ID considerada balón por el sustractor de fondo sea cualquier otro número (o incluso si no hay ninguna ID marcada como balón) se comprueba si existe alguna ID perteneciente a $balon_{ID}$ en la escena, y si se encuentra alguno, se sustituye por $ID_0$ y se marca esta como balón.
+Al guardar los datos de la primera pasada, tendremos que hacerlo en disco, para posteriormente cargarlos al volver a ejecutar el programa. Para guardarlos, se usa el método pickle de Python, el cual almacena cualquier variable en disco y permite cargarla en otro momento.
+
+Los datos se guardan en tuplas, una por cada frame de cada jugada que se haya guardado en la primera pasada. Estas tuplas tienen la forma siguiente:
+  
+\begin{lstlisting}[mathescape]
+  (ids, contornos, ball$_{id}$, circularidad)
+\end{lstlisting}
+
+Donde \textit{ids} es la lista con todos los identificadores de cada contorno, \textit{contornos} es la lista de contornos, \textit{ball\textsubscript{id}} es el identificador (contenido en la lista de identificadores) que el sustractor identificó originalmente como balón, y \textit{circularidad} es la lista de los valores de circularidad de cada uno de los contornos de la lista.
+
+Las tuplas se almacenan en una colección. Si bien podría usarse una simple lista, pero los frames que se almacenan son los de jugadas separadas, no todos los del vídeo. Por tanto, dada una tupla necesitamos saber a qué frame pertenece ya que esto no es inmediato. Entonces, una opción es modificar la estructura de las tuplas para añadirles el número de frame. Sin embargo, con el objetivo de mantener la estructura intacta, se ha optado por usar un diccionario, los cuales pueden ir indexados por el número de frame.
+
+En el fragmento de código \ref{code:ejemplodicc} encontramos un ejemplo del diccionario suponiendo que se guardan los frames del 750 al 900. 
+
+\begin{lstfloat}
+  \begin{lstlisting}[mathescape]
+    {
+      '750': ( [id$_1$, id$_2$, ..., id$_n$], [cont$_1$, cont$_2$, ..., cont$_n$], id$_{i}$,   [cir$_1$, cir$_2$, ..., cir$_n$]),
+      ...
+      '900': ( [id$_1$, id$_2$, ..., id$_n$], [cont$_1$, cont$_2$, ..., cont$_n$], id$_{i}$,   [cir$_1$, cir$_2$, ..., cir$_n$])
+    }
+  \end{lstlisting}
+  \caption{ Ejemplo de la estructura descrita guardando los frames del 750 al 900}
+  \label{code:ejemplodicc}
+\end{lstfloat}
+
+
+\subsubsection*{Salida a CSV}
+
+Aprovechando que ya estamos guardando datos de los frames en el diccionario descrito en la sección anterior, es extremadamente sencillo ir guardándolos también en un archivo CSV.
+
+Dicho archivo permite analizar los datos en cualquier otro programa, como por ejemplo Excel. La información que contiene el archivo es similar a la de las tuplas descritas anteriormente, pero en este caso, en lugar de guardar todos los contornos de un frame con su información en una misma tupla, se guardan separadamente.
+
+Cada línea del archivo salida tiene: el número de frame al que corresponde el contorno, su posición, su identificador, y un booleano que indica si dicho contorno es el balón en ese frame.
+\begin{lstlisting}
+FRAME NUMBER;POSITION;ID;BALL
+808;(818, 573);37;False
+808;(960, 537);62;False
+808;(703, 531);108;True
+808;(1094, 485);51;False
+808;(696, 492);26;False
+808;(69, 471);99;False
+808;(998, 433);59;False
+808;(672, 415);35;False
+808;(390, 410);29;False
+808;(389, 395);110;False
+808;(701, 380);86;False
+808;(744, 309);42;False
+808;(955, 282);33;False
+808;(390, 270);24;False
+\end{lstlisting}
+
+Como hemos dicho, este CSV no se usa en el programa, sino que es una salida alternativa para hacer análisis de datos de forma externa, por lo que no necesitamos un mecanismo en el software que se encargue de leer los datos.
+
+\subsubsection*{Preprocesamiento de los datos}
+Una de las heurísticas principales que vamos a utilizar para inferir la posición real del balón en cada frame es considerar como balón cualquier identificador que se mantenga constante en el tiempo, esto es, que se mantenga durante un número dado de frames seguido. La razón detrás de esto es que, aunque una jugadora puede ser marcada como balón en un frame aislado, normalmente se mueve de manera que no mantiene demasiado tiempo una forma redonda, mientras que la pelota, lógicamente, es redonda de manera constante.
+
+Dado que nos vamos a basar en frames consecutivos, cualquier momento del vídeo en el que un contorno marcado como balón se pierda solamente durante un frame, nos penaliza mucho a la hora de aplicar la consistencia temporal. Para solucionar este contratiempo, recorremos la lista de tuplas. Si para algún frame el identificador del balón es el mismo en los frames anterior y posterior, mientras que en este frame es otro distinto, entonces consideramos la ID de los frames vecinos en lugar de la que se encuentre marcada en ese frame. De esta manera logramos dotar de una cierta continuidad a todos los ID que sean balón.
+
+Una vez hecho esto se recorre todos los frames de cada jugada, llevando un conteo de las veces consecutivas que cada identificador ha sido marcado como balón, quedándonos con la mejor marca para cada identificador. Tras esto, si el máximo número de veces consecutivas que un frame está marcado como balón es mayor de 3 frames, consideramos dicho identificador como balón. 
+
+\subsubsection*{Algoritmo de consistencia temporal}
+Una vez tenemos la lista con los identificadores válidos para el balón ($ball_{ids}$), basta con quedarnos con uno, y, aunque cualquiera de los seleccionados es válido, nos vamos a quedar con el que tenga mejor marca de frames consecutivos como balón, para tener más seguridad de que el ID que vamos a usar es el mejor posible.
+
+A continuación, se realiza un proceso de sustitución de todos los valores que se encuentran en la lista descrita por el valor óptimo, que llamaremos $ball_{id}$. En cada frame de la jugada, si no se encuentra este identificador marcado como balón, se comprueba si el que está marcado se encuentra dentro de $ball_{ids}$, en cuyo caso, se sustituye el valor por $ball_{id}$. Si el ID que se encuentra marcado como balón en ese momento no está en la lista (o no hay ninguno marcado), se comprueba si hay algún valor contenido en $ball_{ids}$ en ese frame, en cuyo caso se sustituye por nuestro valor óptimo en la lista de identificadores de ese frame y se marca como balón.
+
+Una vez sustituidos los valores, todos los ID de los que estamos seguros que son balón, se han unificado para ser uno solo. Aun así, esto no nos asegura que hayamos localizado el balón en todos los frames posibles, aún queda la posibilidad de que haya un tramo de la jugada en que tiene una ID que no estaba en la lista de $ball_{ids}$. Nuevamente, recorremos la lista de frames de la jugada hasta encontrar uno en el que no aparezca $ball_{id}$ y sí aparezca en su antecesor. 
+
+En los frames inmediatamente siguientes, calculamos la distancia de todos los contornos hasta la última posición conocida del balón. Buscamos un contorno que cumpla las siguientes condiciones:
+\begin{itemize}
+  \item Su \textbf{distancia} a la última posición del balón no supera 170 píxeles. Si hemos perdido el balón puede ser bien debido a una oclusión o bien debido a que ha cambiado de identificador de un frame a otro. En cualquier caso, en el frame o frames siguientes, la posición del balón debe estar relativamente cercana a la última conocida
+  \item Posee una \textbf{circularidad} de al menos $0.5$. Relajamos la condición necesaria del test de circularidad porque, si no se localizó el balón usando el conteo de frames consecutivos, probablemente no alcanzaba el $0.7$ del test original.
+  \item  Su identificador \textbf{no existía en el frame anterior}. Cualquiera que sea el identificador del balón, no podía existir en frames anteriores porque lo habríamos localizado usando alguna de las reglas heurísticas anteriores. El identificador, debería ser por tanto, uno nuevo.
+\end{itemize}
+
+En caso de que más de un identificador cumpla todas las condiciones anteriores, buscamos aquel con mayor valor de circularidad. Una vez hemos decidido el identificador a sustituir, en todos los frames siguientes mientras siga apareciendo, lo cambiamos por $ball_{id}$ hasta que o bien deje de aparecer o bien volvamos a encontrar un frame que contiene $ball_{id}$ en su lista de contornos. 
+
+\subsubsection*{Análisis de resultados}
 
 \begin{figure}
 \begin{subfigure}{.5\textwidth}
@@ -434,26 +518,27 @@ Después de hacer este conteo, se vuelve a iterar sobre el conjunto de frames de
 \label{fig:cons}
 \end{figure}
 
-En la figura \ref{fig:cons} podemos ver la diferencia de resultados entre la primera pasada y tras aplicar la heurística descrita anteriormente, la pelota aparece marcada correctamente, mientras que en el frame original en la primera pasada no había ningún contorno marcado como pelota. Además, como en la segunda pasada no necesitamos ejecutar en cada frame la actualización del sustractor de fondo ya que los datos proceden de la pasada anterior, se puede apreciar una mejora significativa de la cifra de FPS.
+En la figura \ref{fig:cons} podemos ver la diferencia de resultados entre la primera pasada y tras aplicar el algoritmo descrito, la pelota aparece marcada correctamente, mientras que en el frame original en la primera pasada no había ningún contorno marcado como pelota. Además, como en la segunda pasada no necesitamos ejecutar en cada frame la actualización del sustractor de fondo ya que los datos proceden de la pasada anterior, se puede apreciar una mejora significativa de la cifra de FPS.
 
-Respecto al CSV final, un fragmento de la salida sería el siguiente:
-\begin{lstlisting}
-FRAME NUMBER;POSITION;ID;BALL
-808;(818, 573);37;False
-808;(960, 537);62;False
-808;(703, 531);108;True
-808;(1094, 485);51;False
-808;(696, 492);26;False
-808;(69, 471);99;False
-808;(998, 433);59;False
-808;(672, 415);35;False
-808;(390, 410);29;False
-808;(389, 395);110;False
-808;(701, 380);86;False
-808;(744, 309);42;False
-808;(955, 282);33;False
-808;(390, 270);24;False
-\end{lstlisting}
+La tabla \ref{tab:3} presenta los siguientes datos para tres jugadas: número de frames de cada jugada, id del balón seleccionada, número de frames en que dicha id está marcada como balón antes de aplicar el algoritmo y después, y porcentaje de mejora. Dicho porcentaje de mejora es la diferencia entre el porcentaje de frames con el balón localizado antes de aplicar el algoritmo y después.
+
+
+\begin{table}
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\multirow{2}{2cm}{Número de frames} & \multirow{2}{*}{ball$_{id}$} & \multicolumn{2}{m{4cm}|}{Número de frames en que ball$_{id}$ se marca como balón} & \multirow{2}{2cm}{Porcentaje de mejora} \\ \cline{3-4}
+& & \multicolumn{1}{m{2cm}|}{Antes} & \multicolumn{1}{m{2cm}|}{Después} &  \\ \hline
+ $185$ & $120$ & $41$ & $145$ & $56.21\%$ \\ \hline
+ &  &  &  &  \\ \hline
+ &  &  &  &  \\ \hline
+\end{tabular}
+\caption{ }
+\label{tab:3}
+\end{table}
+
+Como puede verse, el algoritmo propuesto es bastante efectivo a la hora de localizar el balón en la escena a partir de los datos del sustractor. Hemos sido capaces de encontrar el balón hasta en un $56,20\%$ más de ocasiones que en la salida original.
+
 
 \subsection{Descripción del software final}
 

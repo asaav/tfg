@@ -55,7 +55,7 @@ def main():
             if str(int(k) - 1) in loaded_data and str(int(k) + 1) in loaded_data:
                 previousval = loaded_data[str(int(k) - 1)]
                 nextval = loaded_data[str(int(k) + 1)]
-                if nextval[2] == previousval[2] and nextval[2] is not None:
+                if nextval[2] == previousval[2] and nextval[2] is not None and nextval[2] in v[0]:
                     v[2] = nextval[2]
 
         # Determine ball from contours marked consecutively as it
@@ -72,15 +72,13 @@ def main():
                     consecutive_count = 1
             elif previous_key + 1 != int(key):
                 # Current key is from another play, try to find ball in previous play
-                pass
                 loaded_data = find_ball(ball_count, loaded_data)
+                ball_count = {}
             previous_key = int(key)
             previous_value = loaded_data[str(previous_key)]
 
         # Find ball for the last play
         loaded_data = find_ball(ball_count, loaded_data)
-
-
     else:
         loaded_data = None
 
