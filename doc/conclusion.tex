@@ -1,1 +1,40 @@
 \section{Conclusiones y vías futuras}
+En esta sección haremos un balance sobre el resultado conseguido en el proyecto, así como de sus posibles vías futuras. Hablaremos, pues, de los puntos fuertes y débiles del software final, así como de posibles mejoras que podrían añadirse. 
+
+En general, aunque el resultado es muy satisfactorio, cualquier trabajo de visión artificial tiene espacio a mejora mientras no seamos capaces de, como mínimo, emular la visión real de un ser humano.
+
+\subsection{Conclusiones sobre el proyecto}
+En este proyecto hemos abordado la creación de un sistema automatizado de visión por computador, capaz de detectar las jugadoras y el balón (este último con cierto grado de precisión) de un partido de volleyball. Las imágenes utilizadas han sido las de una cámara en vista cenital, instalada en el pabellón Eduardo Linares de Molina de Segura. El software final ha sido desarrollado en Python, utilizando la librería de visión por computador OpenCV para los algoritmos. Para manejar el software se han incluido dos interfaces alternativas: una por consola, usando las ventanas estándar de OpenCV y otra interfaz gráfica utilizando la librería gráfica PyQt.
+
+La primera de las funcionalidades implementadas fue la de sustracción de fondo. Para ello, utilizando mecanismos de la programación orientada a objetos, se ha creado una interfaz común que ha facilitado la prueba y comparación de unos cuantos algoritmos de sustracción de fondo proporcionados por OpenCV. Estos algoritmos, todos ellos estado del arte, han sido probados con una selección de parámetros y, de todos ellos, se ha optado por MOG2 por razones de desempeño y, en menor grado, de velocidad.
+
+El siguiente paso fue la implementación de algoritmos de tracking, capaces de compensar las carencias en ciertos momentos de la sustracción de fondo, o incluso como alternativa a esta. Originalmente se probaron los algoritmos que ofrece el módulo colaborativo de OpenCV, pero acabaron por ser descartados debido a una combinación entre su pobre rendimiento y alto coste computacional, que reducía severamente la velocidad de la aplicación. Finalmente se optó por implementar Mean Shift y CAMShift. De entre estos dos últimos algoritmos, nos hemos decantado por Mean Shift ya que la adaptabilidad a cambios de tamaño de CAMShift no es útil por las peculiaridades de nuestro escenario: la cámara es desde arriba, cualquier objeto que se acerque (ascienda) se alejará rápidamente por la gravedad.
+
+Por último, para dotar al software de mayor robustez a la hora de localizar el balón en la escena, hemos desarrollado un modelo de consistencia temporal propio que se ejecuta sobre las jugadas del vídeo. Este modelo necesita de los datos del sustractor de fondo para poder funcionar. La manera de extraer dichos datos de las jugadas es mediante pulsaciones de teclas del usuario. Una vez obtenidos, el algoritmo sigue una serie de heurísticas para deducir cuál de las formas que se encuentran en cada frame es realmente el balón.
+
+\subsubsection*{Balance de objetivos}
+Vamos a hacer un balance de, sobre los objetivos iniciales del proyecto qué hemos logrado y cuáles quedan para futuras mejoras. Recordamos que el objetivo principal era el de crear un sistema de visión por computador capaz de localizar durante un partido de volleyball el balón y las jugadoras. Sobre ahí, la prioridad era hacer que la detección del balón fuera lo más precisa posible. Otro objetivo era el de extraer información automáticamente de las jugadas y proporcionar una salida a un archivo CSV, para su posterior análisis.
+
+Teniendo en cuenta estos puntos, nuestro sistema ha logrado lo siguiente:
+\begin{itemize}
+    \item Detectar, mediante sustracción de fondo a todas las jugadoras y al balón, eliminando de la detección formas espúreas, como la de la red cuando se mueve. Además, hemos logrado de que el sustractor de fondo no considere las sombras como una forma, y sea capaz de ignorarlas.
+    \item Etiquetar las formas detectadas y mantenerlas localizadas de un frame a otro, de manera que una forma siempre tenga el mismo identificador.
+    \item Distinguir el balón del resto de formas detectadas, usando un test de circularidad que se aplica sobre todas los contornos de la escena, identificando como baón aquel que dé un mejor resultado.
+    \item Usar algoritmos de seguimiento o \textit{tracking} para suplir posibles carencias del sustractor de fondo, a fin de hacer la detección de objetos más robusta.
+    \item Usar los datos de las jugadas para aplicar un modelo de consistencia temporal que localice en todo momento de la jugada la posición del balón.
+\end{itemize}
+
+En resumen, se ha logrado un sistema muy en consonancia con los que eran nuestros objetivos iniciales, los cuales hemos completado en casi su totalidad. El único objetivo que queda por lograr sería hacer que las jugadas se detecten de manera automática, pero, dado que esto no es en absoluto trivial, queda fuera del presente trabajo. 
+
+El balance, por tanto, es bastante positivo, puesto que hemos logrado unos resultados bastante buenos, aunque queda bastante espacio a mejora.
+
+\subsection{Vías Futuras}
+
+\textbf{NOTA:} Pedro, he intentado hacer una recopilación un poco rápida de lo que hemos ido hablando estos últimos días, pero este apartado tendremos que tratarlo con más tranquilidad mañana, para dejar bien definidas las posibles vías de mejora del proyecto.
+
+En las últimas etapas del proyecto, se han abierto una serie de vías de mejora del mismo, que, por dificultad o por falta de tiempo quedan fuera del alcance del presente trabajo. Entre dichas mejoras se encuentran:
+\begin{itemize}
+    \item Extensión del modelo de consistencia temporal para que incluya también a las jugadoras.
+    \item Detección automática del inicio y fin de las jugadas. 
+    \item Uso de modelos de consistencia temporal más consolidados, como modelos de Markov.
+\end{itemize}

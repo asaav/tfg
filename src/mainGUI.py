@@ -47,6 +47,8 @@ class VideoCapture(QWidget):
         self.trackers = []
         self.subtractor = create_subtractor(subtraction, scale)
 
+        self.loaded_data = None
+
         self.trackersB = QPushButton('Trackers', self)
         self.trackersB.setFixedWidth(50)
         self.trackersB.clicked.connect(self.init_trackers)
@@ -93,29 +95,35 @@ class VideoCapture(QWidget):
             frame, width, height = scale_image(frame, self.scale)
             self.rawFrame = frame.copy()
 
-            # operate with frame (tracking and subtraction)
-            if len(self.trackers) > 0:
-                for t in self.trackers:
-                    t.update(self.rawFrame, frame)
+            nframe = int(self.cap.get(cv2.CAP_PROP_POS_FRAMES))
+            if self.loaded_data is None:
+                # operate with frame (tracking and subtraction)
+                if len(self.trackers) > 0:
+                    for t in self.trackers:
+                        t.update(self.rawFrame, frame)
 
-            processed = self.subtractor.apply(self.rawFrame)
+                processed = self.subtractor.apply(self.rawFrame)
 
-            contours = get_contours(processed)
-            cont_ids = match_contours(self.last_contours, contours, self.last_ids)
-            frame, ball_id = draw_contours(frame, cont_ids, contours)
+                contours = get_contours(processed)
+                cont_ids = match_contours(self.last_contours, contours, self.last_ids)
+                frame, ball_id, roundness = draw_contours(frame, cont_ids, contours)
 
-            if self.action:
-                nframe = self.cap.get(cv2.CAP_PROP_POS_FRAMES)
-                for i, c in enumerate(contours):
-                    (x, y, w, h) = cv2.boundingRect(c)
-                    cont_id = cont_ids[i]
-                    self.log.write('{0};{1};{2};{3}\n'.format(nframe, (x, y), cont_id, cont_id == ball_id))
-                    self.allContours.append((nframe, contours, contours, ball_id))
-
+                if self.action:
+                    if self.log is None:
+                        self.log = open('{0}.log'.format(self.videoName), w)
+                        self.log.write("FRAME NUMBER;POSITION;ID;BALL\n")
+                    for i, c in enumerate(contours):
+                        (x, y, w, h) = cv2.boundingRect(c)
+                        cont_id = cont_ids[i]
+                        self.log.write('{0};{1};{2};{3}\n'.format(nframe, (x, y), cont_id, cont_id == ball_id))
+                        self.allContours.append((nframe, contours, contours, ball_id))
+                self.last_ids = cont_ids
+                self.last_contours = contours
+            elif str(nframe) in self.loaded_data:
+                frame_data = self.loaded_data[str(nframe)]
+                frame, ball_id, roundness = draw_contours(frame, frame_data[0], frame_data[1], frame_data[2])
             # add stats
             frame = print_stats(frame, width, height, start, self.cap.get(cv2.CAP_PROP_POS_MSEC), self.duration)
-            self.last_ids = cont_ids
-            self.last_contours = contours
 
             w = self.videoFrame.width()
             h = self.videoFrame.height()
@@ -170,9 +178,14 @@ class ControlWindow(QMainWindow):
         self.openVideoFile.setShortcut("Ctrl+Shift+V")
         self.openVideoFile.triggered.connect(self.loadVideoFile)
 
+        self.openLog = QAction("Cargar log", self)
+        self.openLog.setShortcut("Ctrl+Shift+L")
+        # self.openVideoFile.triggered.connect(self.loadVideoFile)
+
         self.mainMenu = self.menuBar()
         self.fileMenu = self.mainMenu.addMenu('Archivo')
         self.fileMenu.addAction(self.openVideoFile)
+        self.fileMenu.addAction(self.openLog)
         self.fileMenu.addAction(self.quitAction)
 
         self.openHelp = QAction('Controles', self)

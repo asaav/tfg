@@ -337,8 +337,8 @@ Ahora bien, en el caso del seguimiento, el algoritmo se adapta a esta aplicació
 
 \begin{figure}
     \centering
-    \includegraphics[width=0.8\textwidth]{images/meanshift}
-    \caption{Diagrama de funcionamiento de Mean Shift aplicado a tracking}
+    \includegraphics[width=0.65\textwidth]{images/meanshift}
+    \caption{Diagrama donde puede verse el funcionamiento de Mean Shift iteración a iteración}
     \label{fig:meanshiftopencv}
 \end{figure}
 
@@ -530,14 +530,16 @@ La tabla \ref{tab:3} presenta los siguientes datos para tres jugadas: número de
 \multirow{2}{2cm}{Número de frames} & \multirow{2}{*}{ball$_{id}$} & \multicolumn{2}{m{4cm}|}{Número de frames en que ball$_{id}$ se marca como balón} & \multirow{2}{2cm}{Porcentaje de mejora} \\ \cline{3-4}
 & & \multicolumn{1}{m{2cm}|}{Antes} & \multicolumn{1}{m{2cm}|}{Después} &  \\ \hline
  $185$ & $120$ & $41$ & $145$ & $56.21\%$ \\ \hline
- &  &  &  &  \\ \hline
- &  &  &  &  \\ \hline
+ $135$ & $468$ & $21$ & $75$ & $40\%$ \\ \hline
+ $339$ & $754$ & $31$ & $200$ & $49.85\%$ \\ \hline
 \end{tabular}
 \caption{ }
 \label{tab:3}
 \end{table}
 
-Como puede verse, el algoritmo propuesto es bastante efectivo a la hora de localizar el balón en la escena a partir de los datos del sustractor. Hemos sido capaces de encontrar el balón hasta en un $56,20\%$ más de ocasiones que en la salida original.
+Como puede verse, el algoritmo propuesto es bastante efectivo a la hora de localizar el balón en la escena a partir de los datos del sustractor. Hemos sido capaces de encontrar el balón hasta en un $56,20\%$ más de ocasiones que en la salida original. 
+
+Estos datos, que ya son buenos de por sí, serían aún mejores si contáramos con un conjunto de datos de verdad de fondo que nos sirviera para saber si en los frames que no se encuentra marcado $ball_{id}$ como balón, es debido a que realmente no hay ningún balón o no se ha encontrado. Esto es fácilmente visible en un vídeo pero relativamente complicado de plasmar en papel.
 
 
 \subsection{Descripción del software final}
@@ -582,6 +584,15 @@ Las jugadas, como hemos dicho anteriormente, se detectan de manera manual, por l
 
 \begin{figure}
     \centering
+    \includegraphics[width=0.4\textwidth]{images/help}
+    \caption{Ventana de ayuda de la versión por consola}
+    \label{fig:helpconsola}
+\end{figure}
+
+Al pulsar la tecla H, se abre una ventana de ayuda que contiene información sobre todas las funciones de las teclas que se han descrito en esta sección. Dicha ventana es la que aparece en la figura \ref{fig:helpconsola}
+
+\begin{figure}
+    \centering
     \includegraphics[width=0.8\textwidth]{images/ejemplotracking}
     \caption{Ventana de selección de regiones de interés para tracking}
     \label{fig:iniciatracking}
@@ -592,7 +603,65 @@ Un ejemplo de ejecución usando esta interfaz seria el siguiente:
   ./main.py <Ruta/Al/Video/set_01.avi> -s 0.8 -b MOG2 -l set_01.dmp
 \end{lstlisting}
 
+Con este comando, se haría una pasada usando consistencia temporal sobre el vídeo \path{set_01.avi} a escala de imagen $0.8$, usando MOG2 (irrelevante en este caso puesto que la consistencia temporal no llama al sustractor) y con los datos de las jugadas contenidas en \path{set_01.dmp}
+
 
 \subsubsection*{Interfaz gráfica}
+La interfaz gráfica hace empleo de la biblioteca gráfica PyQt. Esta parte de la aplicación cuenta con la misma funcionalidad que la anterior, pero puede resultarle más sencilla de manejar al usuario medio.
 
+En este caso no es necesario especificar parámetros por consola puesto que todo se controla desde la interfaz desarrollada. Las distintas posibilidades que ofrece son:
 
+\begin{figure}
+    \centering
+    \includegraphics[width=0.4\textwidth]{images/combobox}
+    \caption{Desplegable con los métodos de sustracción de fondo disponibles}
+    \label{fig:combobox}
+\end{figure}
+
+\begin{itemize}
+  \item \textbf{Seleccionar el vídeo} mediante el menú Archivo, que muestra una ventana del sistema para buscar la ruta del vídeo.
+  \item \textbf{Controlar la escala} mediante un cuadro numérico que va de 0 a 1.
+  \item \textbf{Seleccionar el método de sustractor} con un desplegable (figura \ref{fig:combobox}. Los métodos posibles son los expuestos en la sección \ref{sec:subtractors}.
+  \item \textbf{Elegir el método de seguimiento} ente Mean Shift y CAMShift.
+\end{itemize}
+
+De la misma manera que en la versión por consola, el software admite el uso de teclas para ciertas funciones. Además de los atajos, que omitiremos por su poco interés, se permite seleccionar las ventanas iniciales del seguimiento usando la tecla T, que abrirá una ventana en la que seleccionar las regiones de interés.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.4\textwidth]{images/help2}
+    \caption{Ventana de ayuda de la interfaz gráfica}
+    \label{fig:help}
+\end{figure}
+
+También podemos capturar jugadas del mismo modo que en la otra versión: pulsando una tecla al principio y al final de cada jugada. Nuevamente, tenemos una ventana de ayuda (figura \ref{fig:help}) a nuestra disposición que nos indica qué teclas hacen cada función.
+
+\begin{figure}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.9\linewidth]{images/ventanagrafica}
+  \caption { }
+  \label{fig:graficaA}
+\end{subfigure}%
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=.9\linewidth]{images/ventanacargar}
+  \caption { }
+  \label{fig:graficaB}
+\end{subfigure}
+\caption{Pantalla de inicio de la interfaz gráfica (a) y ventana con el menú para cargar vídeo (b)}
+\label{fig:grafica}
+\end{figure}
+
+En la figura \ref{fig:grafica} puede verse la ventana principal de la aplicación, así como los menús que nos permiten cargar vídeos y logs. Una vez cargado un vídeo, al pulsar el botón Play comenzará a ejecutarse el programa con normalidad y aparecerá un slider que permite controlar el momento del vídeo al que se quiere ir, en caso de querer saltar.
+
+Al iniciar la reproducción del vídeo, tanto usando consistencia temporal como sin usarla, la ventana se ve como en la figura \ref{fig:ventanaconvideo}. Tenemos la posibilidad de ver la salida del sustractor de fondo, desmarcando el checkbox \texttt{Video output}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.75\textwidth]{images/grafica}
+    \caption{Ventana de la interfaz gráfica mientras se procesa un vídeo}
+    \label{fig:ventanaconvideo}
+\end{figure}
+
+\newpage

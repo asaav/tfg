@@ -175,7 +175,8 @@ def draw_contours(img, ids, contours, ball_id=None):
 def find_ball(ball_count, data):
 
     # Find minimum id for a contour marked as ball from those with more than 4 consecutive frames marked as ball
-    ball_ids = [int(key) for key, value in ball_count.items() if value >= 4 and key != 'None']
+    print(len([value for value in data.values() if value[2]==754]))
+    ball_ids = [int(key) for key, value in ball_count.items() if value >= 6 and key != 'None']
     ball_id = int(max(ball_count, key=ball_count.get))
     for d in data.values():
         if d[2] != ball_id:
@@ -230,4 +231,6 @@ def find_ball(ball_count, data):
         if located_ball is not None:
             d[0] = [ball_id if value == located_ball else value for value in d[0]]
             d[2] = ball_id
+    print(len([value for value in data.values() if value[2] == 754]))
+    print(len(data))
     return data
