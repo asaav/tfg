@@ -2,33 +2,35 @@
 
 
 \subsection{Visión artificial en los deportes}
+Hasta ahora, hemos dado una introducción general a aplicaciones de la visión por computador. Pasaremos a dar un vistazo a las aplicaciones en el campo más concreto del deporte.
+
 En cuanto a las aplicaciones actuales de la visión por computador en los deportes, cabe comenzar mencionando la que es quizá la más célebre: el ojo de halcón. Este sistema se utiliza en deportes como el tenis, cricket, rugby, volleyball y, recientemente, en fútbol. Tiene origen en 2001, cuando se empezó a utilizar en las retransmisiones televisivas de cricket, y se usaba para hacer seguir las trayectorias de las bolas.
 
 En el caso del tenis, que es el uso mas presente en el imaginario popular, el sistema se implantó por primera vez en un torneo de primer nivel en 2006 en la copa Hopman, y el primer grand-slam en emplearlo fue el Open de Australia de 2007. En estos primeros compases de su utilización, hubo ciertas controversias debido a algunos errores del sistema.
 
-En el fútbol, tras algunas controversias como la mundial de 2010, cuando un \textit{gol fantasma} de Inglaterra no visto por el árbitro no permitió el empate ante Alemania, se implementó en el mundial de clubes de 2012 la llamada \textit{goal-line technology}.
+En el fútbol, tras algunas controversias como la del mundial de 2010, cuando un \textit{gol fantasma} de Inglaterra no visto por el árbitro no permitió el empate ante Alemania, se implementó en el mundial de clubes de 2012 la llamada \textit{goal-line technology}.
 
 El funcionamiento del sistema es similar en todos los deportes que lo utilizan: consiste en una serie de cámaras (10, en tenis) que toman imágenes de distintos ángulos del area de juego, y usando principios de triangulación, se calcula la localización actual de la pelota y se `predice' su posición siguiente \cite{wiki:hawk}.
 
 \begin{figure}
     \centering
     \includegraphics[width=0.6\textwidth]{images/sportVU}
-    \caption{Diagrama informativo de la instalación de SportVU en un campo de baloncesto}
+    \caption{Diagrama informativo de la instalación de SportVU en un campo de baloncesto.}
     \label{fig:sportVU}
 \end{figure}
 
-Existen otras soluciones que permiten recabar estadísticas del partido, como es el caso de SportVU. El sistema, en el caso del fútbol, consiste en la colocación de 3 (figura \ref{fig:sportVU}) o 6 cámaras (en algunos sistemas más), y recaba datos tales como distancia viajada, velocidad media, velocidad máxima, mapas de calor, posesión, etc. Sin embargo, está disponible para más deportes, como baloncesto, fútbol americano, béisbol, hockey de hielo y rugby.
+Existen otras soluciones que permiten recabar estadísticas del partido, como es el caso de SportVU. El sistema, en el caso del fútbol, consiste en la colocación de 3 (figura \ref{fig:sportVU}) o 6 cámaras (en algunos sistemas más), y recaba datos tales como distancia viajada, velocidad media, velocidad máxima, mapas de calor, posesión, etc. Sin embargo, está disponible para más deportes, como baloncesto, fútbol americano, béisbol, hockey sobre hielo y rugby.
 
 \begin{figure}
     \centering
     \includegraphics[width=0.6\textwidth]{images/intel360}
-    \caption{Imagen promocional del sistema Intel 360 Replay}
+    \caption{Imagen promocional del sistema Intel 360 Replay.}
     \label{fig:intel360}
 \end{figure}
 
-Además podemos encontrar otros sistemas que se utilizan para análisis deportivo y/o ayuda al espectador de TV. Entre estos se encuentra el desarrollado por Intel: Intel 360 Replay. Este sistema ofrece repeticiones en 3D mediante el uso de 38 cámaras de resolución 5K. Se lleva usando durante unos años en la NBA y la MLB y recientemente en fútbol, siendo el clásico de la temporada pasada uno de los primeros grandes partidos en usarlo.
+Además podemos encontrar otros sistemas que se utilizan para análisis deportivo y/o ayuda al espectador de TV. Entre estos se encuentra el desarrollado por Intel: Intel 360 Replay (figura \ref{fig:intel360}). Este sistema ofrece repeticiones en 3D mediante el uso de 38 cámaras de resolución 5K. Se lleva usando durante unos años en la NBA y la MLB y recientemente en fútbol, siendo el clásico de la temporada pasada uno de los primeros grandes partidos en usarlo.
 
 En deportes en los que el fondo es muy uniforme, como pueden ser los que emplean pistas de césped, se puede emplear para implementar un efecto de croma en la pista. Esto permite hacer dibujos en el campo de juego a fin de mostrar jugadas.
 
-Uno de las áreas de investigación actuales es la de automatizar el control de cámaras durante las retransmisiones deportivas. Esta tarea es complicada ya que es un doble trabajo, requiere un tracking de la acción (que puede ser muy rápida por momentos) y la búsqueda de un buen plano que ayude al espectador a entender qué está pasando en el partido. Esta tecnología está aun muy lejos de ser una realidad en un futuro cercano. No obstante, un acercamiento es el de que un realizador para controle una cámara principal que es capaz de determinar la posición a la que apunta, y una serie de cámaras `esclavas' apunten a dicha posición, de manera que se pueda ver la acción desde distintos puntos de vista. \cite{book:cvInSports}
+Una de las áreas de investigación actuales es la de automatizar el control de cámaras durante las retransmisiones deportivas. Esta tarea es complicada ya que es un doble trabajo, requiere un tracking de la acción (que puede ser muy rápida por momentos) y la búsqueda de un buen plano que ayude al espectador a entender qué está pasando en el partido. Esta tecnología está aun muy lejos de ser una realidad en un futuro cercano. No obstante, un acercamiento es el de que un realizador controle una cámara principal, que es capaz de determinar de manera autónoma la posición a la que apunta, y una serie de cámaras `esclavas' apunten a dicha posición, de manera que se pueda ver la acción desde distintos puntos de vista \cite{book:cvInSports}.
 \newpage

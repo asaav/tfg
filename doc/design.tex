@@ -6,7 +6,7 @@ El seguimiento se puede realizar por \textit{tracking}, sustracción de fondo, o
 
 Una vez resuelta la parte del seguimiento, el siguiente objetivo sería registrar las posiciones detectadas a un fichero de salida en formato CSV, mediante el cual se puedan hacer análisis de distintas métricas del juego.
 
-El desarrollo se va a centrar, como he ido aclarando, en una aplicación en Python utilizando OpenCV y PyQt para la parte de interfaz gráfica. De cara a la construcción del sistema, la estrategia a seguir es desarrollar separadamente sus partes y posteriormente implementarlas para que funcionen de manera conjunta.
+El desarrollo se va a centrar, como he ido aclarando, en una aplicación en Python utilizando OpenCV y PyQt para la parte de interfaz gráfica. De cara a la construcción del sistema, la estrategia a seguir es desarrollar separadamente sus partes y posteriormente integrarlas para que funcionen de manera conjunta.
 
 A continuación, detallaré estas partes y cómo se ha resuelto su implementación. Las partes principales del sistema son: sustracción de fondo, seguimiento (\textit{tracking}), interfaz gráfica y métodos de consistencia temporal.
 
@@ -25,7 +25,7 @@ Una vez hemos podido ver que esta manera de proceder no es todo lo viable que ca
 \begin{figure}
     \centering
     \includegraphics[width=0.9\textwidth]{images/subtractors}
-    \caption{Estructura de clases de los sustractores de fondo}
+    \caption{Estructura de clases de los sustractores de fondo.}
     \label{fig:subtractors}
 \end{figure}
 
@@ -34,7 +34,7 @@ Para facilitar el uso de estos algoritmos, se ha hecho uso de la programación o
 El funcionamiento interno de las clases resultantes, como se ha dicho, corresponde a las propias implementaciones de OpenCV. Pasaremos a explicar los fundamentos teóricos de cada uno de estos algoritmos.
 
 \subsubsection*{MOG}
-MOG, mezcla de gaussianas (\textit{Mixture of Gaussians}), fue diseñado en 2002 \cite{KaewTraKulPong2002} partiendo de otro algoritmo ya existente de Grimson \textit{et al} \cite{698583,784637,868677}. Usa un modelo de aprendizaje semiparametrizado para estimar el fondo. Ambas versiones crean un modelo del fondo para cada pixel RGB en base a una mezcla de k gaussianas con $3\leq k \leq 5$, cada una de las cuales representa un color. La probabilidad de que un pixel tenga el valor $x_N$ en tiempo N es de
+MOG, mezcla de gaussianas (\textit{Mixture of Gaussians}), fue diseñado en 2002 \cite{KaewTraKulPong2002} partiendo de otro algoritmo ya existente de Grimson \textit{et al} \cite{698583,784637,868677}. Usa un modelo de aprendizaje semiparametrizado para estimar el fondo. Ambas versiones crean un modelo del fondo para cada pixel RGB en base a una mezcla de k gaussianas, con $3\leq k \leq 5$, cada una de las cuales representa un color con una cierta variabilidad. La probabilidad de que un pixel tenga el valor $x_N$ en el instante de tiempo $N$ es de
 \[
     p(x_N) = \sum_{j=1}^{k} w_j \mathcal{N} (x_N;\theta_j )
 \]
@@ -42,9 +42,9 @@ donde $w_k$ es el peso de la componente guasiana k-ésima. $\mathcal{N} (x;\thet
 \[
     \mathcal{N}(x;\theta_k) = \mathcal{N}(x;\mu_k, \Sigma_k) = \frac{1}{(2\pi)^{\frac{D}{2}}|\Sigma_k|^\frac{1}{2}}e^{-\frac{1}{2}(x-\mu_k)^T\Sigma_k^{-1}(x-\mu_k)}
 \]
-donde $\mu_K$ es la media y $\Sigma_K = \sigma_K^2I$ es la covarianza de la componente. Las distribuciones se ordenan en base a una medida de fitness, definido por $\frac{w_k}{\sigma_k}$ y las B primeras forman el modelo de fondo con $B = \arg\min (\sum_{j=1}^{k} w_j < T)$ donde T es el límite de probabilidad mínima a partir de cual un pixel se considera fondo. Un pixel se considera parte de los objetos de la escena si está 2.5 desviaciones por encima de una de las B distribuciones.
+donde $\mu_K$ es la media y $\Sigma_K = \sigma_K^2I$ es la matri< de covarianza de la componente. Las distribuciones se ordenan en base a una medida de \textit{fitness}, definido por $\frac{w_k}{\sigma_k}$ y las B primeras forman el modelo de fondo con $B = \arg\min (\sum_{j=1}^{k} w_j < T)$ donde T es el límite de probabilidad mínima a partir de cual un pixel se considera fondo. Un pixel se considera parte de los objetos de la escena si está 2.5 desviaciones por encima de alguna de las B distribuciones.
 
-La diferencia entre la implementación original de Grimson y la de este algoritmo es las funciones de actualización de cada frame. En el caso del original las funciones de actualización son: 
+La diferencia entre la implementación original de Grimson y la de este algoritmo radica simplemente en las funciones de actualización de cada frame. En el caso del original las funciones de actualización son: 
 \begin{align*}
     &\hat{w}_k^{N+1} = (1 - \alpha)\hat{w}_k^{N} + \alpha\hat{p}(\omega_k | x_{N+1}) \\
     &\hat{\mu}_k^{N+1} = (1 - \alpha)\hat{\mu}_k^{N} + \rho x_{N+1} \\
@@ -52,6 +52,8 @@ La diferencia entre la implementación original de Grimson y la de este algoritm
     &\rho = \alpha \mathcal{N}(x_{N+1};\hat{\mu}_k^N, \hat{\Sigma}_k^N) \\
     &\hat{p}(\omega_k | x_{N+1}) = \text{1 si $\omega_k$ es la primera componente gaussiana; 0 si no}
 \end{align*}
+
+siendo $\alpha$ la velocidad de aprendizaje, o \textit{learning rate} del algoritmo.
 
 Las funciones de actualización de la versión de Kaewtrakulpong añaden ciertas optimizaciones para hacer más robusta la estimación de fondo. Ya que siguen el mismo fundamento que las anteriores, pero son algo más complicadas, no merece la pena explicarlas aquí.
 
@@ -70,16 +72,16 @@ Una novedad de MOG respecto a su predecesor es la capacidad para discernir las s
   \caption { }
   \label{fig:MOG1b}
 \end{subfigure}
-\caption{Salida del algoritmo MOG (a) Imagen binarizada del algoritmo (b) Imagen del vídeo tras aplicar la máscara}
+\caption{Salida del algoritmo MOG: (a) Imagen binarizada del algoritmo. (b) Imagen del vídeo tras aplicar la máscara.}
 \label{fig:MOG}
 \end{figure}
 
-El funcionamiento de MOG en un frame puede verse en la figura \ref{fig:MOG}. Como puede verse, el algoritmo detecta los cuerpos con cierto nivel de fidelidad, aunque en algunos momentos puede ser especialmente sensible a una jugadora estática. Por otro lado, la detección de las sombras no es en absoluto perfecta, y no en pocas ocasiones se marcan partes de la sombra como componentes de la imagen. El rendimiento es correcto, no se aprecian ralentizaciones graves, como ya veremos en la tabla \ref{tab:1}.
+El funcionamiento de MOG en un frame puede verse en la figura \ref{fig:MOG}. Como puede verse, el algoritmo detecta los cuerpos con cierto nivel de fidelidad, aunque en algunos momentos puede ser especialmente sensible a una jugadora estática. Por otro lado, la detección de las sombras no es en absoluto perfecta, y no en pocas ocasiones se marcan partes de la sombra como componentes de la imagen. El rendimiento es correcto, no se aprecian ralentizaciones graves, como ya comprobaremos más adelante en la tabla \ref{fig:fps}.
 
 \subsubsection*{MOG2}
 MOG2 es un algoritmo propuesto en los trabajos \cite{art:Zivkovic1} y \cite{art:Zivkovic2} de Z. Zivkovic. Tiene el mismo fundamento que el anterior método, estima el fondo mediante K gaussianas, haciendo uso nuevamente de un modelo semiparametrizado. 
 
-La diferencia respecto a MOG es que, en lugar de mantener la distribución de mezcla de K gaussianas para todos los pixeles de la imagen, este método es capaz de adaptarse automáticamente y seleccionar el número de componentes gaussianas necesario para cada pixel. Esto permite una mayor flexibilidad e incluso mayor eficiencia, ya que en el mejor de los casos podría tener pixeles con el mismo número de componentes que usaría el anterior, pero otros con menos, agilizando la computación.
+La diferencia respecto a MOG es que, en lugar de mantener la distribución de mezcla de K gaussianas para todos los pixeles de la imagen, este método es capaz de adaptarse automáticamente y seleccionar el número de componentes gaussianas necesario para cada pixel. Esto permite una mayor flexibilidad e incluso mayor eficiencia, ya que en el peor de los casos podría tener pixeles con el mismo número de componentes que usaría el anterior, pero otros con menos, agilizando la computación.
 
 \begin{figure}
 \begin{subfigure}{.5\textwidth}
@@ -94,7 +96,7 @@ La diferencia respecto a MOG es que, en lugar de mantener la distribución de me
   \caption { }
   \label{fig:MOG21b}
 \end{subfigure}
-\caption{Salida del algoritmo MOG2 (a) Imagen binarizada del algoritmo (b) Imagen del vídeo tras aplicar la máscara }
+\caption{Salida del algoritmo MOG2: (a) Imagen binarizada del algoritmo. (b) Imagen del vídeo tras aplicar la máscara.}
 \label{fig:MOG2}
 \end{figure}
 
@@ -103,7 +105,7 @@ GMG surge en un trabajo de Godbehere \textit{et al.} \cite{art:Godbehere}. En es
 
 La implementación de OpenCV tiene una peculiaridad respecto al resto, y es que requiere de un número $T$ de frames determinado para inicializar el modelo de fondo, y durante estos T frames, la salida del sustractor es una imagen negra. Esta inicialización puede ser interesante en caso de contar con vídeos en los que se vea el fondo al principio sin ningún tipo de oclusión, en nuestro caso, que se vea el campo sin ningún jugador. Desgraciadamente, esto no siempre es posible, por lo que la efectividad inicial puede verse limitada debido a esta condición.
 
-Durante la inicialización, se guarda un histograma $\hat{H}_{ij}(k)$ en espacio RGB por cada pixel previamente cuantizado. Los primeros $T$ frames del vídeo se utilizan como datos de entrenamiento para estimar la función de probabilidad de cada pixel, es decir, el modelo de fondo. El proceso de inicialización comienza en cada frame generando un vector $f_{ij}(k) = L(\hat{I}_{ij}(k)) \in \mathcal{F}$ mediante una función $L$ a partir de la entrada. Una vez generados todos los vectores, se calcula el histograma $\hat{H}_{ij}(T) = \frac{1}{F_{tot}}\Sigma_{x = 1}^T f_{ij}(x)$. $F_{tot}$ es el número total de distintas características (\textit{features}) observadas, que siempre debe ser menor o igual que $F_{max}$, una constante del sistema. En caso de que sea mayor, se eliminan las observaciones más antiguas hasta que se cumpla que $F_{tot} \leq F_{max}$.
+Durante la inicialización, se guarda un histograma $\hat{H}_{ij}(k)$ en el espacio RGB por cada pixel previamente cuantizado. Los primeros $T$ frames del vídeo se utilizan como datos de entrenamiento para estimar la función de probabilidad de cada pixel, es decir, el modelo de fondo. El proceso de inicialización comienza en cada frame generando un vector $f_{ij}(k) = L(\hat{I}_{ij}(k)) \in \mathcal{F}$ mediante una función $L$ a partir de la entrada. Una vez generados todos los vectores, se calcula el histograma $\hat{H}_{ij}(T) = \frac{1}{F_{tot}}\Sigma_{x = 1}^T f_{ij}(x)$. $F_{tot}$ es el número total de distintas características (\textit{features}) observadas, que siempre debe ser menor o igual que $F_{max}$, una constante del sistema. En caso de que sea mayor, se eliminan las observaciones más antiguas hasta que se cumpla que $F_{tot} \leq F_{max}$.
 
 A partir de aquí se utiliza inferencia bayesiana para calcular la probabilidad de que un pixel dado sea fondo a partir de la característica observada. Sea $p(F|f)$ la probabilidad de que un pixel con característica $f_{ij}(k)$ sea parte del primer plano y $p(B|f)$ la probabilidad de que este mismo pixel sea fondo:
 \[
@@ -112,7 +114,7 @@ A partir de aquí se utiliza inferencia bayesiana para calcular la probabilidad 
 
 Siendo $p(f|B) = f_{ij}(k)^T\hat{H}_{ij}(k)$, $p(f|F) = 1 - p(f|B)$, $p(F)$ un parámetro constante que afecta a la sensibilidad del algoritmo y $p(B) = 1 - p(F)$. Una vez calculado $p(B|f)$ para cada pixel, obtenemos una imagen $P(k)$ a la que se le aplican una serie de transformaciones morfológicas de manera que se eliminen las posibles pequeñas formas anómalas que puedan detectarse y las componentes de la imagen aparezcan conectadas. Posteriormente, se aplica un umbral a la imagen para generar a partir de ella una imagen en binario que servirá como máscara y será la salida del sustractor.
 
-Por último, se debe actualizar el histograma que se usa como modelo de fondo de manera que se adapte a posibles cambios en la escena. Si un pixel está marcado como frente de la escena, el histograma para él no se actualiza. Si no, si la característica $f_{ij}(k)$ tiene peso 0 en el histograma y se ha excedido la constante $F_max$, se debe eliminar alguna característica del histograma, la de menor peso. A continuación se actualiza el histograma con la nuevo característica a añadir: $H_{ij}(k+1)=(1-\alpha)H_{ij}(k)+\alpha f_{ij}(k)$ siendo $\alpha$ el parámetro de adaptación (\textit{learning rate}) del algoritmo, y cuanto más grande sea, antes se eliminan las observaciones anteriores.
+Por último, se debe actualizar el histograma que se usa como modelo de fondo de manera que se adapte a posibles cambios en la escena. Si un pixel está marcado como frente de la escena, el histograma para él no se actualiza. Si no, si la característica $f_{ij}(k)$ tiene peso 0 en el histograma y se ha excedido la constante $F_max$, se debe eliminar alguna característica del histograma, la de menor peso. A continuación se actualiza el histograma con la nueva característica a añadir: $H_{ij}(k+1)=(1-\alpha)H_{ij}(k)+\alpha f_{ij}(k)$ siendo $\alpha$ el parámetro de adaptación (\textit{learning rate}) del algoritmo, y cuanto más grande sea, antes se eliminan las observaciones anteriores.
 
 \begin{figure}
 \begin{subfigure}{.5\textwidth}
@@ -127,19 +129,19 @@ Por último, se debe actualizar el histograma que se usa como modelo de fondo de
   \caption { }
   \label{fig:GMG1b}
 \end{subfigure}
-\caption{Salida del algoritmo GMG (a) Imagen binarizada del algoritmo (b) Imagen del vídeo tras aplicar la máscara }
+\caption{Salida del algoritmo GMG: (a) Imagen binarizada del algoritmo. (b) Imagen del vídeo tras aplicar la máscara.}
 \label{fig:GMG}
 \end{figure}
 
-En cuanto al desempeño del algoritmo, en la figura \ref{fig:GMG} podemos ver que es extremadamente sensible al ruido de la cámara, cosa que hace que la detección de objetos no sea estable. Esta inestabilidad hace que constantemente se pierdan de un frame a otro algunos de los contornos, y haya que asignarles etiquetas nuevas, lo que explica que en la imagen haya etiquetas tan altas. Se aprecian algunos fallos en la detección de sombras, por ejemplo, los de la jugadora más arriba a la derecha y el balón en la imagen. 
+En cuanto al desempeño del algoritmo, en la figura \ref{fig:GMG} podemos ver que es extremadamente sensible al ruido de la cámara, cosa que hace que la detección de objetos no sea todo lo estable que cabría desear. Esta inestabilidad hace que constantemente se pierdan de un frame a otro algunos de los contornos, y haya que asignarles etiquetas nuevas, lo que explica que en la imagen haya etiquetas tan altas (hablaremos sobre ellas con más profundidad en secciones posteriores). Se aprecian algunos fallos en la detección de sombras, por ejemplo, los de la jugadora más arriba a la derecha y el balón en la imagen. 
 
-El rendimiento no es especialmente bueno, se puede apreciar que cuando el ruido de imagen es muy grande y se detectan muchos contornos falsos, el funcionamiento es extremadamente lento. Además, durante los frames de inicialización, también se notan algunos bajones de FPS (tabla \ref{tab:1}. Con todo, estos problemas no son especialmente serios y un reescalado de la imagen bastaría para paliarlos.
+El rendimiento no es especialmente bueno, se puede apreciar que cuando el ruido de imagen es muy grande y se detectan muchos contornos falsos, el funcionamiento es extremadamente lento. Además, durante los frames de inicialización, también se notan algunos bajones de FPS (que veremos en la tabla \ref{fig:fps}). Con todo, estos problemas no son especialmente serios y un reescalado de la imagen bastaría para paliarlos.
 
 
 \subsubsection*{CNT}
-Este método fue desarrollado como open source en \cite{git:CNT}. El algoritmo fue planteado por el desarrollador para que fuera eficiente en máquinas de bajo rendimiento, como Raspberry Pi. Se basa en ``contar'' (que es de donde viene su nombre) cuántos frames se mantiene estable un pixel, y a mayor estabilidad, mayor probabilidad de que este sea fondo.
+Este método fue desarrollado como open source en \cite{git:CNT}. El algoritmo fue planteado por el desarrollador para que fuera eficiente en máquinas de bajo rendimiento, como Raspberry Pi. Se basa en una simple heurística de ``contar'' (que es de donde viene su nombre) cuántos frames se mantiene estable un pixel, y a mayor estabilidad, mayor probabilidad de que este sea fondo.
 
-El método consta de 2 parámetros principales: minPixelStability y maxPixelStability. La utilidad de estos parámetros es, respectivamente, indicar el número de frames que un pixel debe mantenerse en el mismo color para ser considerado estable, y el máximo crédito que se le permite a un pixel en el histograma.
+El método consta de 2 parámetros principales: \textit{minPixelStability} y \textit{maxPixelStability}. La utilidad de estos parámetros es, respectivamente, indicar el número de frames que un pixel debe mantenerse en el mismo color para ser considerado estable, y el máximo crédito que se le permite a un pixel en el histograma.
 
 El algoritmo es relativamente sencillo en su funcionamiento: en cada frame se calcula la diferencia entre el color actual y el del frame anterior, si no se diferencian por encima de cierto límite, se incrementa la estabilidad del pixel en cuestión. Cuando la estabilidad de un pixel llega a ser igual o mayor que la que se le pasa al algoritmo por parámetro se empieza a considerar parte del fondo.
 
@@ -158,16 +160,16 @@ Existe la opción de añadir el uso de un histograma, y aquí es donde cobra imp
   \caption { }
   \label{fig:CNT1b}
 \end{subfigure}
-\caption{Salida del algoritmo CNT (a) Imagen binarizada del algoritmo (b) Imagen del vídeo tras aplicar la máscara }
+\caption{Salida del algoritmo CNT: (a) Imagen binarizada del algoritmo. (b) Imagen del vídeo tras aplicar la máscara.}
 \label{fig:CNT}
 \end{figure}
 
-En nuestro caso, usando este método, la reproducción del vídeo llega sobradamente a los 30 fps, con lo que puede ser útil si existe la necesidad de que la aplicación funcione en tiempo real, además de contar con un modo para paralelizar la ejecución de manera que sea incluso más rápida. Sin embargo, se aprecian problemas de ruido en la imagen binarizada, lo cual crea varios contornos falsos.
+En nuestro caso, usando este método, la reproducción del vídeo llega sobradamente a los 30 fps, con lo que puede ser útil si existe la necesidad de que la aplicación funcione en tiempo real, además de contar con un modo para paralelizar la ejecución de manera que sea incluso más rápida. Sin embargo, se aprecian problemas de ruido en la imagen binarizada, lo cual crea varios contornos falsos, como puede verse en la figura \ref{fig:CNT}.
 
 \subsubsection*{GSOC}
-GSOC fue implementado durante un \textit{Google Summer of Code}, no procede de ningún artículo, sino que parte de un algoritmo existente (LSBP). El funcionamiento de este algoritmo no tiene documentación más allá de aclarar que se basa en saliencia de vídeo \cite{4967608}. Es un algoritmo de aprendizaje no supervisado basado en un modelo dinámico de texturas y contraste local de características.
+GSOC fue implementado durante un \textit{Google Summer of Code}, no procede de ningún artículo, sino que parte de un algoritmo existente, LSBP. El funcionamiento de este algoritmo no tiene documentación más allá de aclarar que se basa en \textit{saliencia} de vídeo \cite{4967608}. Es un algoritmo de aprendizaje no supervisado basado en un modelo dinámico de texturas y contraste local de características.
 
-En general, el algoritmo funciona de manera bastante robusta en lo que respecta a detectar formas en la escena, e incluso es capaz de detectar sin grandes problemas las sombras. Sin embargo, no logra detectar el balón de manera consistente, por lo que sería necesario usar algún tipo de algoritmo de tracking en conjunción a este.
+En general, el algoritmo funciona de manera bastante robusta en lo que respecta a detectar formas en la escena, e incluso es capaz de detectar sin grandes problemas las sombras. Sin embargo, no logra detectar el balón de manera consistente, por lo que sería necesario usar algún tipo de algoritmo de tracking en conjunción con este.
 
 \begin{figure}
 \begin{subfigure}{.5\textwidth}
@@ -182,7 +184,7 @@ En general, el algoritmo funciona de manera bastante robusta en lo que respecta 
   \caption { }
   \label{fig:GSOC1b}
 \end{subfigure}
-\caption{Salida del algoritmo GSOC (a) Imagen binarizada del algoritmo (b) Imagen del vídeo tras aplicar la máscara }
+\caption{Salida del algoritmo GSOC: (a) Imagen binarizada del algoritmo. (b) Imagen del vídeo tras aplicar la máscara.}
 \label{fig:GSOC}
 \end{figure}
 
@@ -211,11 +213,11 @@ KNN \cite{Bishop:2006:PRM:1162264}, también conocido como método de los k-veci
   \caption { }
   \label{fig:KNN1b}
 \end{subfigure}
-\caption{Salida del algoritmo KNN (a) Imagen binarizada del algoritmo (b) Imagen del vídeo tras aplicar la máscara }
+\caption{Salida del algoritmo KNN: (a) Imagen binarizada del algoritmo. (b) Imagen del vídeo tras aplicar la máscara.}
 \label{fig:KNN}
 \end{figure}
 
-La base del funcionamiento algoritmo es sencilla: dados unos datos etiquetados, y un punto nuevo del que no conocemos su clase, se trata de inferir a qué clase pertenece calculando las distancias a los k vecinos más cercanos. La clase del punto será la misma que tenga la mayoría de sus k vecinos. Por ejemplo, en la figura \ref{fig:knnejemplo} podemos ver cómo el círculo verde, que es del que desconocemos su clase, tiene, con $k=3$ como vecinos 2 triángulos y 1 cuadrado, por lo que se etiquetaría como triángulo. Si por el contrario tenemos $k=5$, entonces hay 3 cuadrados y 2 triángulos como vecinos más cercanos, en cuyo caso se etiquetaría como cuadrado.
+La base del funcionamiento algoritmo es sencilla: dados unos datos etiquetados, y un punto nuevo del que no conocemos su clase, se trata de inferir a qué clase pertenece calculando las distancias a los k vecinos más cercanos. La clase del punto será la misma que tenga la mayoría de sus k vecinos más cercanos. Por ejemplo, en la figura \ref{fig:knnejemplo} podemos ver cómo el círculo verde, que es del que desconocemos su clase, tiene, con $k=3$ como vecinos 2 triángulos y 1 cuadrado, por lo que se etiquetaría como triángulo. Si por el contrario tenemos $k=5$, entonces hay 3 cuadrados y 2 triángulos como vecinos más cercanos, en cuyo caso se etiquetaría como cuadrado.
 
 Dado que en el caso de la sustracción de fondo no tenemos datos etiquetados a priori, se debe realizar una primera estimación, por lo tanto, durante un número de frames iniciales $n$, se guardan las $n$ ternas RGB que actuarán como el modelo de fondo inicial. Estos datos se toman como si fueran fondo. A continuación, se calculan las $k$ distancias de cada pixel nuevo a los $T$ anteriores y dependiendo de las distancias, se estima la probabilidad de ser fondo o no. El modelo de fondo se va actualizando, sustituyendo vectores antiguos por vectores nuevos que se consideran fondo.
 
@@ -236,7 +238,7 @@ Según Zivkovic \cite{art:Zivkovic2}, se adapta el tamaño del kernel $k$ a cada
   \caption { }
   \label{fig:nms1b}
 \end{subfigure}
-\caption{Comparativa de la salida del vídeo antes (a) y después (b) de aplicar la operación de supresión de no máximos }
+\caption{Comparativa de la salida del vídeo antes (a) y después (b) de aplicar la operación de supresión de no máximos. }
 \label{fig:nms}
 \end{figure}
 
@@ -254,23 +256,31 @@ Una vez calculada esta matriz, si para un contorno $c$, su más cercano es otro 
 
 Ahora tendremos que seleccionar de entre todos los algoritmos anteriores el que mejor convenga a nuestros objetivos, teniendo en cuenta el coste computacional de cada uno, así como su desempeño a la hora de estimar el fondo.
 
-El primer apartado a valorar será el rendimiento en frames por segundo (FPS) de cada algoritmo con distintos tamaños de imagen. Cabe aclarar que la cifra de FPS que aparece en la tabla no se mantiene constante sino que es un promedio de las cifras observadas durante la ejecución. Suponiendo que la escala 1 de imagen es la resolución original, 1920x1080, los resultados obtenidos, usando un Intel i7 6700k para procesar, son los que aparecen en la tabla \ref{tab:1}
+El primer apartado a valorar será el rendimiento en frames por segundo (FPS) de cada algoritmo con distintos tamaños de imagen. Cabe aclarar que la cifra de FPS que aparece en la tabla no se mantiene constante sino que es un promedio de las cifras observadas durante la ejecución. Suponiendo que la escala 1 de imagen es la resolución original, 1920x1080, los resultados obtenidos, usando un Intel i7 6700k para procesar, son los que aparecen en la figura \ref{fig:fps}.
 
-\begin{table}
+% \begin{table}
+%     \centering
+%     \begin{tabular}{| l | c | c | c |}
+%     \hline
+%     \textbf{Método} & \textbf{FPS a escala 1} & \textbf{FPS a escala 0.8} & \textbf{FPS a escala 0.6}\\ \hline
+%     Diferencia de frames & 40 (25 ms) & 51 (19 ms) & 68 (14 ms) \\ \hline
+%     MOG & 15 (66 ms) & 23 (43 ms) & 37 (27 ms) \\ \hline
+%     MOG2 & 28 (35 ms) & 36 (27 ms) & 52 (19 ms) \\ \hline
+%     GMG & 10 (100 ms) & 15 (66 ms) & 24 (41 ms) \\ \hline
+%     CNT & 30 (33 ms) & 41 (24 ms) & 55 (18 ms)\\ \hline
+%     KNN & 32 (31 ms) & 40 (25 ms) & 56 (17 ms)\\ \hline
+%   \end{tabular}
+%   \caption{}
+%   \label{tab:1}
+% \end{table}
+
+\begin{figure}
     \centering
-    \begin{tabular}{| l | c | c | c |}
-    \hline
-    \textbf{Método} & \textbf{FPS a escala 1} & \textbf{FPS a escala 0.8} & \textbf{FPS a escala 0.6}\\ \hline
-    Diferencia de frames & 40 (25 ms) & 51 (19 ms) & 68 (14 ms) \\ \hline
-    MOG & 15 (66 ms) & 23 (43 ms) & 37 (27 ms) \\ \hline
-    MOG2 & 28 (35 ms) & 36 (27 ms) & 52 (19 ms) \\ \hline
-    GMG & 10 (100 ms) & 15 (66 ms) & 24 (41 ms) \\ \hline
-    CNT & 30 (33 ms) & 41 (24 ms) & 55 (18 ms)\\ \hline
-    KNN & 32 (31 ms) & 40 (25 ms) & 56 (17 ms)\\ \hline
-  \end{tabular}
-  \caption{}
-  \label{tab:1}
-\end{table}
+    \includegraphics[width=0.7\textwidth]{images/plotFPS}
+    \caption{Estadísticas de rendimiento en FPS de los algoritmos con distintos tamaños de imagen (sobre CPU i7-6700k).}
+    \label{fig:fps}
+\end{figure}
+
 
 Podemos ver que CNT y KNN son los dos mejores en lo que a velocidad se refiere, con valores de fps muy parejos, seguidos por MOG2. Por otro lado, GMG es de todos los métodos el más lento con diferencia.
 
@@ -293,7 +303,7 @@ CNT es también otro descarte a pesar de estar entre los tres más rápidos, deb
   \caption { }
   \label{fig:modelos1b}
 \end{subfigure}
-\caption{Comparativa entre los modelos de fondo finales de MOG2 (a) y KNN (b) tras un vídeo de un set completo }
+\caption{Comparativa entre los modelos de fondo finales de MOG2 (a) y KNN (b) tras un vídeo de un set completo. }
 \label{fig:modelos}
 \end{figure}
 
@@ -309,19 +319,19 @@ Los algoritmos de seguimiento que proporciona el módulo colaborativo de OpenCV 
 \begin{figure}
     \centering
     \includegraphics[width=0.35\textwidth]{images/trackers}
-    \caption{Estructura de clases de los algoritmos de \textit{tracking}}
+    \caption{Estructura de clases de los algoritmos de \textit{tracking}.}
     \label{fig:trackers}
 \end{figure}
 
 Tras descartar los anteriores métodos, se implementaron los métodos de Mean Shift y CAMShift. Como se ha dicho antes, se ha utilizado una estructura de clases parecida a la de los sustractores de fondo (figura \ref{fig:trackers}) con el mismo objetivo: dar una interfaz común a todas las clases que haga sencillo el seleccionar el algoritmo que se quiera utilizar antes de ejecutar el programa.
 
 \subsubsection*{Mean Shift}
-Mean Shift es una técnica de análisis de espacios de características no paramétrica que consiste en localizar los máximos de una función de densidad, es decir, es un algoritmo de búsqueda de modas. Fue presentada por Fukunaga y Hostetler en 1975 \cite{1055330}. Entre sus aplicaciones se encuentran procesamiento y segmentación de imágenes (figura \ref{fig:clustering}) y, por supuesto, seguimiento o \textit{tracking}.
+Mean Shift es una técnica de análisis de espacios de características no paramétrica que consiste en localizar los máximos de una función de densidad, es decir, es un algoritmo de búsqueda de modas. Fue presentada por Fukunaga y Hostetler en 1975 \cite{1055330}. Entre sus aplicaciones se encuentran procesamiento y segmentación de imágenes (figura \ref{fig:clustering}) y, por supuesto, el tema que nos ocupa: el seguimiento o \textit{tracking}.
 
 \begin{figure}
     \centering
     \includegraphics[width=0.6\textwidth]{images/clustering}
-    \caption{Ejemplo de aplicación de Mean Shift para clustering}
+    \caption{Ejemplo de aplicación de Mean Shift para clustering.}
     \label{fig:clustering}
 \end{figure}
 
@@ -338,12 +348,12 @@ Ahora bien, en el caso del seguimiento, el algoritmo se adapta a esta aplicació
 \begin{figure}
     \centering
     \includegraphics[width=0.65\textwidth]{images/meanshift}
-    \caption{Diagrama donde puede verse el funcionamiento de Mean Shift iteración a iteración}
+    \caption{Diagrama donde puede verse el funcionamiento de Mean Shift iteración a iteración \cite{wiki:meanshift}.}
     \label{fig:meanshiftopencv}
 \end{figure}
 
 
-Entre las ventajas de Mean Shift se encuentra su capacidad para manejar y adaptarse a distintos espacios de características, además de, en el caso de la segmentación, que no es necesario dar un número de clusters de datos, sino que el algoritmo es capaz de hallarlos por sí mismo. Sin embargo, es un algoritmo más bien lento (tiene un orden de $n^2$) aunque fácilmente paralelizable, y, en el caso del seguimiento, dado que el tamaño de la ventana es constante, puede tener problemas en caso de que algún objeto de la escena cambie de tamaño (se acerque o bien se aleje, como en la figura \ref{fig:ejemplos1a})
+Entre las ventajas de Mean Shift se encuentra su capacidad para manejar y adaptarse a distintos espacios de características, además de, en el caso de la segmentación, que no es necesario dar un número de clusters de datos, sino que el algoritmo es capaz de hallarlos por sí mismo. Sin embargo, es un algoritmo más bien lento aunque fácilmente paralelizable, y, en el caso del seguimiento, dado que el tamaño de la ventana es constante, puede tener problemas en caso de que algún objeto de la escena cambie de tamaño (se acerque o bien se aleje, como veremos en la figura \ref{fig:ejemplos1a})
 
 \subsubsection*{CAMShift}
 
@@ -355,7 +365,7 @@ CAMShift es una versión adaptativa del algoritmo anterior propuesta por Gary Br
 Siendo $I(x,y)$ la probabilidad en la posición $(x,y)$. Con estos valores se calculan los parámetros de la nueva ventana: orientación $\theta$, longitud $l$ y anchura $w$. Sea
 
 \[
-a = \frac{M_{20}}{M_{00}} - x_c^2 ; b = 2(\frac{M_{11}}{M_00}-x_cy_c) ; c = \frac{M_{02}}{M_{00}} - y_c^2
+a = \frac{M_{20}}{M_{00}} - x_c^2 ; b = 2(\frac{M_{11}}{M_{00}}-x_cy_c) ; c = \frac{M_{02}}{M_{00}} - y_c^2
 \]
 La nueva ventana puede calcularse como
 \begin{gather*}
@@ -364,12 +374,12 @@ La nueva ventana puede calcularse como
   w = \sqrt{\frac{(a+c)-\sqrt{b^2+(a-c)^2}}{2}}
 \end{gather*}
 
-El resto del método es exactamente igual que Mean Shift, se hace uso de un histograma y retroproyecciones para calcular el centro de la ventana. Por ello, el resultado obtenido es igualmente bueno con la ventaja de que se adapta a cambios de tamaño en los objetos de la escena. Sin embargo, CAMShift es ligeramente más costoso de procesar, debido a los cálculos necesarios para hallar las medidas de la ventana. En la figura \ref{fig:camshiftopencv} podemos ver iteración a iteración cómo CAMShift se adapta a una cara en el caso de una imagen estática
+El resto del método es exactamente igual que Mean Shift, se hace uso de un histograma y retroproyecciones para calcular el centro de la ventana. Por ello, el resultado obtenido es igualmente bueno con la ventaja de que se adapta a cambios de tamaño en los objetos de la escena. Sin embargo, CAMShift es ligeramente más costoso de procesar, debido a los cálculos necesarios para hallar las medidas de la ventana. En la figura \ref{fig:camshiftopencv} podemos ver iteración a iteración cómo CAMShift se adapta a una cara en el caso de una imagen estática.
 
 \begin{figure}
     \centering
     \includegraphics[width=0.7\textwidth]{images/camshift}
-    \caption{Diagrama de funcionamiento de CAMShift iteración a iteración}
+    \caption{Diagrama de funcionamiento de CAMShift iteración a iteración \cite{wiki:camshift}.}
     \label{fig:camshiftopencv}
 \end{figure}
 
@@ -390,7 +400,7 @@ Para nuestro caso, debemos ser extremadamente cuidadosos a la hora de selecciona
     \caption{ }
     \label{fig:ejemplos1b}
   \end{subfigure}
-  \caption{Ejemplos de tracking usando Mean Shift y CAMShift (a) Usando Mean Shift (b) Usando CAMShift}
+  \caption{Ejemplos de tracking usando Mean Shift y CAMShift (a) Usando Mean Shift (b) Usando CAMShift.}
   \label{fig:ejemplos}
 \end{figure}
 
@@ -407,14 +417,14 @@ A la hora de analizar los FPS obtenidos con cada uno de los algoritmos, debe acl
   Mean Shift & 15 (66 ms) & 32 (31 ms) \\\hline
   CAMShift & 13 (76 ms)& 30 (33 ms)\\\hline
   \end{tabular}
-\caption{}
+\caption{Datos de rendimiento en FPS de los algoritmos de seguimiento implementados, usando y sin usar la optimización por secciones de imagen.}
 \label{tab:2}
 \end{table}
 
 En la tabla \ref{tab:2} pueden verse los resultados haciendo seguimiento de las 12 jugadoras en escena, tanto con la optimización descrita como sin ella, con una escala de 0.8 en el tamaño de imagen (nuevamente, suponiendo que escala 1 es resolución 1920x1080) y funcionando sobre CPU Intel i7 6700k. Como hemos dicho, CAMShift es un poco más lento que Mean Shift, aunque la diferencia en FPS no es demasiado notable.
 
 \subsection{Consistencia temporal y generación de CSV}
-Otro de los puntos importantes del trabajo es el de hacer que la detección sea consistente entre jugadas, así como que el programa sea capaz de generar un archivo CSV con la información de estas. Para lograr este fin, vamos a aplicar un modelo temporal más o menos rudimentario, aunque en el futuro se podrían utilizar modelos de Markov.
+Otro de los puntos importantes del trabajo es el de hacer que la detección sea consistente entre jugadas, así como que el programa sea capaz de generar un archivo CSV con la información de estas. Para lograr este fin, vamos a aplicar un modelo temporal más o menos rudimentario, aunque en el futuro se podrían utilizar modelos probabilísticos más elaborados, como pueden ser los modelos de Markov.
 
 Dicho modelo temporal va a hacer uso de los datos del sustractor de fondo como punto de partida, centrándose exclusivamente en el balón. Como hemos explicado en secciones anteriores, durante la ejecución normal del programa, se realiza un test de circularidad sobre los contornos que detecta el sustractor de fondo para poder saber cuál de ellos es la pelota, usando el máximo valor que esté por encima de $0.70$ como criterio de selección.
 
@@ -432,7 +442,7 @@ Los datos se guardan en tuplas, una por cada frame de cada jugada que se haya gu
 
 Donde \textit{ids} es la lista con todos los identificadores de cada contorno, \textit{contornos} es la lista de contornos, \textit{ball\textsubscript{id}} es el identificador (contenido en la lista de identificadores) que el sustractor identificó originalmente como balón, y \textit{circularidad} es la lista de los valores de circularidad de cada uno de los contornos de la lista.
 
-Las tuplas se almacenan en una colección. Si bien podría usarse una simple lista, pero los frames que se almacenan son los de jugadas separadas, no todos los del vídeo. Por tanto, dada una tupla necesitamos saber a qué frame pertenece ya que esto no es inmediato. Entonces, una opción es modificar la estructura de las tuplas para añadirles el número de frame. Sin embargo, con el objetivo de mantener la estructura intacta, se ha optado por usar un diccionario, los cuales pueden ir indexados por el número de frame.
+Las tuplas se almacenan en una colección, si bien podría usarse una simple lista, pero los frames que se almacenan son los de jugadas separadas, no todos los del vídeo. Por tanto, dada una tupla necesitamos saber a qué frame pertenece ya que esto no es inmediato. Entonces, una opción es modificar la estructura de las tuplas para añadirles el número de frame. Sin embargo, con el objetivo de mantener la estructura intacta, se ha optado por usar un diccionario, los cuales pueden ir indexados por el número de frame.
 
 En el fragmento de código \ref{code:ejemplodicc} encontramos un ejemplo del diccionario suponiendo que se guardan los frames del 750 al 900. 
 
@@ -444,7 +454,7 @@ En el fragmento de código \ref{code:ejemplodicc} encontramos un ejemplo del dic
       '900': ( [id$_1$, id$_2$, ..., id$_n$], [cont$_1$, cont$_2$, ..., cont$_n$], id$_{i}$,   [cir$_1$, cir$_2$, ..., cir$_n$])
     }
   \end{lstlisting}
-  \caption{ Ejemplo de la estructura descrita guardando los frames del 750 al 900}
+  \caption{ Ejemplo de la estructura descrita guardando los frames del 750 al 900.}
   \label{code:ejemplodicc}
 \end{lstfloat}
 
@@ -486,13 +496,13 @@ Una vez hecho esto se recorre todos los frames de cada jugada, llevando un conte
 \subsubsection*{Algoritmo de consistencia temporal}
 Una vez tenemos la lista con los identificadores válidos para el balón ($ball_{ids}$), basta con quedarnos con uno, y, aunque cualquiera de los seleccionados es válido, nos vamos a quedar con el que tenga mejor marca de frames consecutivos como balón, para tener más seguridad de que el ID que vamos a usar es el mejor posible.
 
-A continuación, se realiza un proceso de sustitución de todos los valores que se encuentran en la lista descrita por el valor óptimo, que llamaremos $ball_{id}$. En cada frame de la jugada, si no se encuentra este identificador marcado como balón, se comprueba si el que está marcado se encuentra dentro de $ball_{ids}$, en cuyo caso, se sustituye el valor por $ball_{id}$. Si el ID que se encuentra marcado como balón en ese momento no está en la lista (o no hay ninguno marcado), se comprueba si hay algún valor contenido en $ball_{ids}$ en ese frame, en cuyo caso se sustituye por nuestro valor óptimo en la lista de identificadores de ese frame y se marca como balón.
+A continuación se realiza un proceso de sustitución de todos los valores que se encuentran en la lista descrita por el valor óptimo, que llamaremos $ball_{id}$. En cada frame de la jugada, si no se encuentra este identificador marcado como balón, se comprueba si el que está marcado se encuentra dentro de $ball_{ids}$, en cuyo caso, se sustituye el valor por $ball_{id}$. Si el ID que se encuentra marcado como balón en ese momento no está en la lista (o no hay ninguno marcado), se comprueba si hay algún valor contenido en $ball_{ids}$ en ese frame, en cuyo caso se sustituye por nuestro valor óptimo en la lista de identificadores de ese frame y se marca como balón.
 
 Una vez sustituidos los valores, todos los ID de los que estamos seguros que son balón, se han unificado para ser uno solo. Aun así, esto no nos asegura que hayamos localizado el balón en todos los frames posibles, aún queda la posibilidad de que haya un tramo de la jugada en que tiene una ID que no estaba en la lista de $ball_{ids}$. Nuevamente, recorremos la lista de frames de la jugada hasta encontrar uno en el que no aparezca $ball_{id}$ y sí aparezca en su antecesor. 
 
 En los frames inmediatamente siguientes, calculamos la distancia de todos los contornos hasta la última posición conocida del balón. Buscamos un contorno que cumpla las siguientes condiciones:
 \begin{itemize}
-  \item Su \textbf{distancia} a la última posición del balón no supera 170 píxeles. Si hemos perdido el balón puede ser bien debido a una oclusión o bien debido a que ha cambiado de identificador de un frame a otro. En cualquier caso, en el frame o frames siguientes, la posición del balón debe estar relativamente cercana a la última conocida
+  \item Su \textbf{distancia} a la última posición del balón no supera 170 píxeles. Si hemos perdido el balón puede ser bien debido a una oclusión o bien debido a que ha cambiado de identificador de un frame a otro. En cualquier caso, en el frame o frames siguientes, la posición del balón debe estar relativamente cercana a la última conocida.
   \item Posee una \textbf{circularidad} de al menos $0.5$. Relajamos la condición necesaria del test de circularidad porque, si no se localizó el balón usando el conteo de frames consecutivos, probablemente no alcanzaba el $0.7$ del test original.
   \item  Su identificador \textbf{no existía en el frame anterior}. Cualquiera que sea el identificador del balón, no podía existir en frames anteriores porque lo habríamos localizado usando alguna de las reglas heurísticas anteriores. El identificador, debería ser por tanto, uno nuevo.
 \end{itemize}
@@ -514,13 +524,13 @@ En caso de que más de un identificador cumpla todas las condiciones anteriores,
   \caption { }
   \label{fig:consb}
 \end{subfigure}
-\caption{Imagen antes (a) y después (b) de aplicar la técnica de consistencia temporal descrita}
+\caption{Imagen antes (a) y después (b) de aplicar la técnica de consistencia temporal descrita.}
 \label{fig:cons}
 \end{figure}
 
 En la figura \ref{fig:cons} podemos ver la diferencia de resultados entre la primera pasada y tras aplicar el algoritmo descrito, la pelota aparece marcada correctamente, mientras que en el frame original en la primera pasada no había ningún contorno marcado como pelota. Además, como en la segunda pasada no necesitamos ejecutar en cada frame la actualización del sustractor de fondo ya que los datos proceden de la pasada anterior, se puede apreciar una mejora significativa de la cifra de FPS.
 
-La tabla \ref{tab:3} presenta los siguientes datos para tres jugadas: número de frames de cada jugada, id del balón seleccionada, número de frames en que dicha id está marcada como balón antes de aplicar el algoritmo y después, y porcentaje de mejora. Dicho porcentaje de mejora es la diferencia entre el porcentaje de frames con el balón localizado antes de aplicar el algoritmo y después.
+La tabla \ref{tab:3} presenta los siguientes datos para tres jugadas: número de frames de cada jugada, id del balón, número de frames en que dicha id está marcada como balón antes de aplicar el algoritmo y después, y porcentaje de mejora. Dicho porcentaje de mejora es la diferencia entre el porcentaje de frames con el balón localizado antes de aplicar el algoritmo y después.
 
 
 \begin{table}
@@ -533,13 +543,13 @@ La tabla \ref{tab:3} presenta los siguientes datos para tres jugadas: número de
  $135$ & $468$ & $21$ & $75$ & $40\%$ \\ \hline
  $339$ & $754$ & $31$ & $200$ & $49.85\%$ \\ \hline
 \end{tabular}
-\caption{ }
+\caption{Análisis de resultados del algoritmo de consistencia temporal implementado. }
 \label{tab:3}
 \end{table}
 
 Como puede verse, el algoritmo propuesto es bastante efectivo a la hora de localizar el balón en la escena a partir de los datos del sustractor. Hemos sido capaces de encontrar el balón hasta en un $56,20\%$ más de ocasiones que en la salida original. 
 
-Estos datos, que ya son buenos de por sí, serían aún mejores si contáramos con un conjunto de datos de verdad de fondo que nos sirviera para saber si en los frames que no se encuentra marcado $ball_{id}$ como balón, es debido a que realmente no hay ningún balón o no se ha encontrado. Esto es fácilmente visible en un vídeo pero relativamente complicado de plasmar en papel.
+Hay que tener en cuenta que el $100\%$ de frames con balón es inalcanzable, ya que hay algunos frames de las jugadas en los que el balón desaparece por solapamiento con una jugadora, por ejemplo. Un coeficiente mejor para determinar el grado de mejora tras aplicar el algoritmo sería el porcentaje de frames en los que se detecta el balón respecto al número total de frames en los que aparece el mismo. Para lograr este último dato necesitamos revisar el vídeo frame a frame de manera manual para crear una verdad de fondo que nos sirva para comparar. Este sería un trabajo demasiado extensivo, por lo que nos conformaremos con las medidas empleadas.
 
 
 \subsection{Descripción del software final}
@@ -554,8 +564,8 @@ Esta interfaz usa las ventanas estándar de OpenCV (las que pueden verse en la f
 En el caso de esta interfaz, el vídeo se pasa como argumento al ejecutar el programa por línea de comandos. Los parámetros con los que cuenta el programa son:
 
 \begin{itemize}
-  \item \textbf{Escala de imagen}: Mediante la opción -s y un factor entre 0 y 1, podemos controlar la escala a la que se procesan y muestran las imágenes del vídeo original. Por ejemplo, un factor de $0,5$ significaría que el vídeo original se reduce a la mitad de su tamaño antes de procesar
-  \item \textbf{Método de sustracción de fondo}: Usando la opción -b se puede seleccionar un método de sustracción de fondo entre todos los expuestos en la sección \ref{sec:subtractors}. En caso de no especificar ninguno, el programa usa el método recomendado (MOG2)
+  \item \textbf{Escala de imagen}: Mediante la opción -s y un factor entre 0 y 1, podemos controlar la escala a la que se procesan y muestran las imágenes del vídeo original. Por ejemplo, un factor de $0,5$ significaría que el vídeo original se reduce a la mitad de su tamaño antes de procesar.
+  \item \textbf{Método de sustracción de fondo}: Usando la opción -b se puede seleccionar un método de sustracción de fondo entre todos los expuestos en la sección \ref{sec:subtractors}. En caso de no especificar ninguno, el programa usa el método recomendado, MOG2.
   \item \textbf{Método de tracking}: Podemos seleccionar entre Mean Shift o CAMShift usando la opción -t. De la misma manera que antes, la opción por defecto es Mean Shift.
 \end{itemize}
 
@@ -572,20 +582,20 @@ En el caso de esta interfaz, el vídeo se pasa como argumento al ejecutar el pro
   \caption { }
   \label{fig:ventanaprocessed}
 \end{subfigure}
-\caption{Ventanas estándar de OpenCV en la interfaz por consola del vídeo (a) y del sustractor de fondo (b) }
+\caption{Ventanas estándar de OpenCV en la interfaz por consola del vídeo (a) y del sustractor de fondo (b).}
 \label{fig:ventanas}
 \end{figure}
 
-Durante la ejecución del programa, puede pausarse el vídeo pulsando la tecla espacio, así como avanzarlo o retrocederlo 5 segundos, usando las teclas K y L respectivamente. Al iniciarse, el programa automáticamente empieza a aplicar el método de sustracción de fondo especificado por parámetro, y pueden verse en la ventana principal recuadros verdes que corresponden con las formas detectadas por el sustractor. Una de estas formas, la marcada en rojo, corresponde con la pelota.
+Durante la ejecución del programa puede pausarse el vídeo pulsando la tecla espacio, así como avanzarlo o retrocederlo 5 segundos, usando las teclas K y L respectivamente. Al iniciarse, el programa automáticamente empieza a aplicar el método de sustracción de fondo especificado por parámetro, y pueden verse en la ventana principal recuadros verdes que corresponden con las formas detectadas por el sustractor. Una de estas formas, la marcada en rojo, se corresponde con la pelota.
 
 Dado que para la inicialización de los métodos de tracking se requiere de una ventana inicial desde la que empezar a hacer el seguimiento, en caso de querer usar esta técnica se debe pulsar la tecla T, que hace que se abra una ventana (figura \ref{fig:iniciatracking}) para elegir las regiones iniciales del seguimiento.
 
-Las jugadas, como hemos dicho anteriormente, se detectan de manera manual, por lo que al pulsar la tecla J el programa iniciará el registro de la jugada y lo terminará al volver a pulsar dicha tecla. Al salir del programa se generarán el fichero CSV y un archivo DMP que es el que se usará para la ejecución de la consistencia temporal, pasándolo por parámetro con la opción -l
+Las jugadas, como hemos dicho anteriormente, se detectan de manera manual, por lo que al pulsar la tecla J el programa iniciará el registro de la jugada y lo terminará al volver a pulsar dicha tecla. Al salir del programa se generarán el fichero CSV y un archivo DMP que es el que se usará para la ejecución de la consistencia temporal, pasándolo por parámetro con la opción -l.
 
 \begin{figure}
     \centering
     \includegraphics[width=0.4\textwidth]{images/help}
-    \caption{Ventana de ayuda de la versión por consola}
+    \caption{Ventana de ayuda de la versión por consola.}
     \label{fig:helpconsola}
 \end{figure}
 
@@ -594,7 +604,7 @@ Al pulsar la tecla H, se abre una ventana de ayuda que contiene información sob
 \begin{figure}
     \centering
     \includegraphics[width=0.8\textwidth]{images/ejemplotracking}
-    \caption{Ventana de selección de regiones de interés para tracking}
+    \caption{Ventana de selección de regiones de interés para tracking.}
     \label{fig:iniciatracking}
 \end{figure}
 
@@ -614,14 +624,14 @@ En este caso no es necesario especificar parámetros por consola puesto que todo
 \begin{figure}
     \centering
     \includegraphics[width=0.4\textwidth]{images/combobox}
-    \caption{Desplegable con los métodos de sustracción de fondo disponibles}
+    \caption{Desplegable con los métodos de sustracción de fondo disponibles.}
     \label{fig:combobox}
 \end{figure}
 
 \begin{itemize}
   \item \textbf{Seleccionar el vídeo} mediante el menú Archivo, que muestra una ventana del sistema para buscar la ruta del vídeo.
   \item \textbf{Controlar la escala} mediante un cuadro numérico que va de 0 a 1.
-  \item \textbf{Seleccionar el método de sustractor} con un desplegable (figura \ref{fig:combobox}. Los métodos posibles son los expuestos en la sección \ref{sec:subtractors}.
+  \item \textbf{Seleccionar el método de sustractor} con un desplegable (figura \ref{fig:combobox}). Los métodos posibles son los expuestos en la sección \ref{sec:subtractors}.
   \item \textbf{Elegir el método de seguimiento} ente Mean Shift y CAMShift.
 \end{itemize}
 
@@ -630,7 +640,7 @@ De la misma manera que en la versión por consola, el software admite el uso de 
 \begin{figure}
     \centering
     \includegraphics[width=0.4\textwidth]{images/help2}
-    \caption{Ventana de ayuda de la interfaz gráfica}
+    \caption{Ventana de ayuda de la interfaz gráfica.}
     \label{fig:help}
 \end{figure}
 
@@ -649,18 +659,18 @@ También podemos capturar jugadas del mismo modo que en la otra versión: pulsan
   \caption { }
   \label{fig:graficaB}
 \end{subfigure}
-\caption{Pantalla de inicio de la interfaz gráfica (a) y ventana con el menú para cargar vídeo (b)}
+\caption{Pantalla de inicio de la interfaz gráfica (a) y ventana con el menú para cargar vídeo (b).}
 \label{fig:grafica}
 \end{figure}
 
 En la figura \ref{fig:grafica} puede verse la ventana principal de la aplicación, así como los menús que nos permiten cargar vídeos y logs. Una vez cargado un vídeo, al pulsar el botón Play comenzará a ejecutarse el programa con normalidad y aparecerá un slider que permite controlar el momento del vídeo al que se quiere ir, en caso de querer saltar.
 
-Al iniciar la reproducción del vídeo, tanto usando consistencia temporal como sin usarla, la ventana se ve como en la figura \ref{fig:ventanaconvideo}. Tenemos la posibilidad de ver la salida del sustractor de fondo, desmarcando el checkbox \texttt{Video output}
+Al iniciar la reproducción del vídeo, tanto usando consistencia temporal como sin usarla, la ventana se ve como en la figura \ref{fig:ventanaconvideo}. Tenemos la posibilidad de ver la salida del sustractor de fondo, desmarcando el checkbox \texttt{Video output}.
 
 \begin{figure}
     \centering
     \includegraphics[width=0.75\textwidth]{images/grafica}
-    \caption{Ventana de la interfaz gráfica mientras se procesa un vídeo}
+    \caption{Ventana de la interfaz gráfica mientras se procesa un vídeo.}
     \label{fig:ventanaconvideo}
 \end{figure}
 
