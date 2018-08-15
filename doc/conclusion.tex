@@ -30,11 +30,11 @@ El balance, por tanto, es bastante positivo, puesto que hemos logrado unos resul
 
 \subsection{Vías Futuras}
 
-\textbf{NOTA:} Pedro, he intentado hacer una recopilación un poco rápida de lo que hemos ido hablando estos últimos días, pero este apartado tendremos que tratarlo con más tranquilidad mañana, para dejar bien definidas las posibles vías de mejora del proyecto.
-
 En las últimas etapas del proyecto, se han abierto una serie de vías de mejora del mismo, que, por dificultad o por falta de tiempo quedan fuera del alcance del presente trabajo. Entre dichas mejoras se encuentran:
 \begin{itemize}
     \item Extensión del modelo de consistencia temporal para que incluya también a las jugadoras.
     \item Detección automática del inicio y fin de las jugadas. 
-    \item Uso de modelos de consistencia temporal más consolidados, como modelos de Markov.
+    \item Uso de modelos de consistencia temporal más consolidados, como modelos de Markov y el algoritmo de Viterbi\cite{Bishop:2006:PRM:1162264} o filtros de Kalman (EKF, UKF y filtros de partículas) \cite{Thrun:2005:PR:1121596}.
+    \item Resolución de los problemas derivados del solapamiento de objetos de la escena: distinguir los contornos que se solapan o bien asignarles sus anteriores identificadores una vez se han separado.
+    \item Selección automática (\textit{auto-tunning}) de parámetros para el sustractor de fondo, el algoritmo de consistencia temporal, los métodos de seguimiento...
 \end{itemize}

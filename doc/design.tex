@@ -219,9 +219,9 @@ KNN \cite{Bishop:2006:PRM:1162264}, también conocido como método de los k-veci
 
 La base del funcionamiento algoritmo es sencilla: dados unos datos etiquetados, y un punto nuevo del que no conocemos su clase, se trata de inferir a qué clase pertenece calculando las distancias a los k vecinos más cercanos. La clase del punto será la misma que tenga la mayoría de sus k vecinos más cercanos. Por ejemplo, en la figura \ref{fig:knnejemplo} podemos ver cómo el círculo verde, que es del que desconocemos su clase, tiene, con $k=3$ como vecinos 2 triángulos y 1 cuadrado, por lo que se etiquetaría como triángulo. Si por el contrario tenemos $k=5$, entonces hay 3 cuadrados y 2 triángulos como vecinos más cercanos, en cuyo caso se etiquetaría como cuadrado.
 
-Dado que en el caso de la sustracción de fondo no tenemos datos etiquetados a priori, se debe realizar una primera estimación, por lo tanto, durante un número de frames iniciales $n$, se guardan las $n$ ternas RGB que actuarán como el modelo de fondo inicial. Estos datos se toman como si fueran fondo. A continuación, se calculan las $k$ distancias de cada pixel nuevo a los $T$ anteriores y dependiendo de las distancias, se estima la probabilidad de ser fondo o no. El modelo de fondo se va actualizando, sustituyendo vectores antiguos por vectores nuevos que se consideran fondo.
+Dado que en el caso de la sustracción de fondo no tenemos datos etiquetados a priori, se debe realizar una primera estimación, por lo tanto, durante un número de frames iniciales $n$, se guardan las $n$ ternas RGB que actuarán como el modelo de fondo inicial. A continuación, se calculan las $k$ distancias de cada pixel nuevo a los $n$ anteriores y dependiendo de las distancias, se estima la probabilidad de ser fondo, si la distancia es pequeña, o no, en caso de que la distancia sea mayor. El modelo de fondo se va actualizando, sustituyendo vectores antiguos por vectores nuevos que se consideran fondo.
 
-Según Zivkovic \cite{art:Zivkovic2}, se adapta el tamaño del kernel $k$ a cada pixel. En lugar de buscar un tamaño óptimo global, se incrementa para cada pixel hasta que haya una cantidad suficiente de datos. De esa forma se logran valores de $k$ grandes en áreas con un pequeño número de muestras y valores pequeños en zonas con mayor densidad. Es común usar $k=1$, pero se recomienda $k=0.1T$ para mayor robustez a valores atípicos.
+El algoritmo, en lugar de fijar un tamaño fijo al kernel, trata de adaptarlo para cada pixel de la imagen, con lo que para cada punto nuevo, se calculan los $k$ vecinos más cercanos de los que conformaban la muestra inicial. Si la distancia respecto al más lejano de ellos es muy pequeña, entonces la densidad de probabilidad en esa zona de la imagen es grande, luego es más probable que ese pixel sea parte del fondo\cite{art:Zivkovic2}.
 
 \subsubsection*{Operaciones posteriores}
 
@@ -530,18 +530,18 @@ En caso de que más de un identificador cumpla todas las condiciones anteriores,
 
 En la figura \ref{fig:cons} podemos ver la diferencia de resultados entre la primera pasada y tras aplicar el algoritmo descrito, la pelota aparece marcada correctamente, mientras que en el frame original en la primera pasada no había ningún contorno marcado como pelota. Además, como en la segunda pasada no necesitamos ejecutar en cada frame la actualización del sustractor de fondo ya que los datos proceden de la pasada anterior, se puede apreciar una mejora significativa de la cifra de FPS.
 
-La tabla \ref{tab:3} presenta los siguientes datos para tres jugadas: número de frames de cada jugada, id del balón, número de frames en que dicha id está marcada como balón antes de aplicar el algoritmo y después, y porcentaje de mejora. Dicho porcentaje de mejora es la diferencia entre el porcentaje de frames con el balón localizado antes de aplicar el algoritmo y después.
+La tabla \ref{tab:3} presenta los siguientes datos para tres jugadas: número de frames de cada jugada, id del balón, número de frames en que dicha id está marcada como balón antes de aplicar el algoritmo y después, así como el porcentaje de frames en los que el balón se encuentra localizado antes y después de aplicar el algoritmo.
 
 
 \begin{table}
 \centering
-\begin{tabular}{|c|c|c|c|c|}
+\begin{tabular}{|c|c|c|c|c|c|}
 \hline
-\multirow{2}{2cm}{Número de frames} & \multirow{2}{*}{ball$_{id}$} & \multicolumn{2}{m{4cm}|}{Número de frames en que ball$_{id}$ se marca como balón} & \multirow{2}{2cm}{Porcentaje de mejora} \\ \cline{3-4}
-& & \multicolumn{1}{m{2cm}|}{Antes} & \multicolumn{1}{m{2cm}|}{Después} &  \\ \hline
- $185$ & $120$ & $41$ & $145$ & $56.21\%$ \\ \hline
- $135$ & $468$ & $21$ & $75$ & $40\%$ \\ \hline
- $339$ & $754$ & $31$ & $200$ & $49.85\%$ \\ \hline
+\multirow{2}{2cm}{Número de frames} & \multirow{2}{*}{ball$_{id}$} & \multicolumn{2}{m{4cm}|}{Número de frames en que ball$_{id}$ se marca como balón} & \multicolumn{2}{m{4cm}|}{Porcentaje de frames en los que el balón está localizado} \\ \cline{3-6}
+& & \multicolumn{1}{m{2cm}|}{Antes} & \multicolumn{1}{m{2cm}|}{Después} & \multicolumn{1}{m{2cm}|}{Antes} & \multicolumn{1}{m{2cm}|}{Después} \\ \hline
+ $185$ & $120$ & $41$ & $145$ & $22.16\%$ & $78.37\%$ \\ \hline
+ $135$ & $468$ & $21$ & $75$ & $15.55\%$ & $55.55\%$ \\ \hline
+ $339$ & $754$ & $31$ & $200$ & $9.14\%$ & $58.99\%$\\ \hline
 \end{tabular}
 \caption{Análisis de resultados del algoritmo de consistencia temporal implementado. }
 \label{tab:3}
