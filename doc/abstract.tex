@@ -1,6 +1,13 @@
 \section*{Resumen}
 \addcontentsline{toc}{section}{\protect\numberline{}Resumen}
+En este trabajo de fin de grado se ha abordado el análisis, diseño e implementación de un sistema de visión por computador capaz de detectar e identificar a las jugadoras y al balón de un partido de volleyball. El sistema debe extraer datos del partido y exportarlos a un CSV, permitiendo análisis de estadísticas del partido con fines de \textit{scouting} tales como velocidades, posiciones, trayectorias del balón, golpeos, etc. 
 
+Las imágenes usadas para este sistema serán proporcionadas por una cámara en vista cenital del pabellón, y el desarrollo se realizará utilizando Python, la librería de visión por computador OpenCV, así como PyQt para la interfaz gráfica.
+
+Los objetivos principales del proyecto son, como hemos dicho, desarrollar un sistema de visión artificial capaz de detectar las jugadoras y el balón (este último de una manera robusta, distinguiéndolo de las jugadoras) de un partido de volleyball; asignarle a cada una de estas formas un número identificador, consistente entre frames y exportar los datos de los contornos detectados durante las jugadas a un archivo CSV, usando los números identificadores para etiquetar los contornos en el mismo. Dos problemas a valorar son la política de de resolución de solapamientos entre dos contornos de la escena (jugadora-jugadora o balón-jugadora) y la detección de las jugadas del partido.
+
+
+\newpage
 \section*{Extended Abstract}
 \addcontentsline{toc}{section}{\protect\numberline{}Extended Abstract}
 
