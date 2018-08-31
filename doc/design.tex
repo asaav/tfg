@@ -42,7 +42,7 @@ donde $w_k$ es el peso de la componente guasiana k-ésima. $\mathcal{N} (x;\thet
 \[
     \mathcal{N}(x;\theta_k) = \mathcal{N}(x;\mu_k, \Sigma_k) = \frac{1}{(2\pi)^{\frac{D}{2}}|\Sigma_k|^\frac{1}{2}}e^{-\frac{1}{2}(x-\mu_k)^T\Sigma_k^{-1}(x-\mu_k)}
 \]
-donde $\mu_K$ es la media y $\Sigma_K = \sigma_K^2I$ es la matri< de covarianza de la componente. Las distribuciones se ordenan en base a una medida de \textit{fitness}, definido por $\frac{w_k}{\sigma_k}$ y las B primeras forman el modelo de fondo con $B = \arg\min (\sum_{j=1}^{k} w_j < T)$ donde T es el límite de probabilidad mínima a partir de cual un pixel se considera fondo. Un pixel se considera parte de los objetos de la escena si está 2.5 desviaciones por encima de alguna de las B distribuciones.
+donde $\mu_K$ es la media y $\Sigma_K = \sigma_K^2I$ es la matriz de covarianza de la componente. Las distribuciones se ordenan en base a una medida de \textit{fitness}, definido por $\frac{w_k}{\sigma_k}$ y las B primeras forman el modelo de fondo con $B = \arg\min (\sum_{j=1}^{k} w_j < T)$ donde T es el límite de probabilidad mínima a partir de cual un pixel se considera fondo. Un pixel se considera parte de los objetos de la escena si está 2.5 desviaciones por encima de alguna de las B distribuciones.
 
 La diferencia entre la implementación original de Grimson y la de este algoritmo radica simplemente en las funciones de actualización de cada frame. En el caso del original las funciones de actualización son: 
 \begin{align*}
