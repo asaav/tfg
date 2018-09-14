@@ -6,9 +6,9 @@ Paralelamente, los investigadores en visión artificial han desarrollado técnic
 
 Sin embargo, a pesar de estos avances, hacer que un ordenador sea capaz de interpretar una imagen al mismo nivel que lo haría un niño sigue siendo un sueño sin cumplir. La dificultad del problema que nos ocupa suele ser subestimada, ya que se suele tender a pensar que las partes difíciles de la inteligencia artificial son las cognitivas y no las relativas a la percepción. 
 
-Pero, ¿qué es lo que hace tan difícil la visión por computador? En parte es que, dado nuestro desconocimiento del funcionamiento de nuestra visión, es un \textit{problema inverso}: dada una cantidad insuficiente de información (una imagen o un video), tratamos de llegar a las incógnitas que nos permiten especificar una solución completa. Es decir, a partir de una imagen, tratamos de reconstruir sus propiedades, como las formas, iluminación y color.
+Pero, ¿qué es lo que hace tan difícil la visión por computador? En parte es que, dado nuestro desconocimiento del funcionamiento de nuestra visión, es un \textit{problema inverso}: dada una cantidad insuficiente de información (una imagen o un video), tratamos de llegar a las incógnitas que nos permiten especificar una solución completa. Es decir, a partir de una imagen, tratamos de reconstruir no sólo las propiedades de los objetos que allí aparecen (como su forma, iluminación, color o posición), sino también el reconocimiento (clasificación o etiquetado de dichos objetos), la separación del resto de la escena (segmentación), etc.
 
-Ahora bien, no todo son malas noticias: la visión por computador tiene numerosos casos de uso hoy en día. Entre sus aplicaciones encontramos cosas tan mundanas como (\citeauthor*{book:szeliski}):
+Ahora bien, no todo son malas noticias: la visión por computador tiene numerosos casos de uso hoy en día. Entre sus aplicaciones encontramos cosas como (\citeauthor*{book:szeliski}):
 \begin{itemize}
 \item \textbf{Reconocimiento de caracteres óptico.} Se ha llegado a reconocer caracteres numéricos con una tasa de error del 0.23\% \cite{art:2012arXiv1202.2745C}.
 \item \textbf{Inspección mecanizada.} Inspección de partes de automóviles o aeronaves a fin de, por ejemplo, encontrar defectos en el metal (Figura \ref{fig:apps1a}).
@@ -51,7 +51,7 @@ En la \textbf{década de 1980} los esfuerzos se centraron en técnicas matemáti
 
 En la \textbf{década de 1990} continuó la investigación en todo lo anteriormente mencionado, pero algunos de los temas vieron un aumento en su actividad. Hubo un esfuerzo por solucionar el problema de la estructura a partir del movimiento. El trabajo comenzado en la década anterior consistente en usar medidas detalladas de color e intensidad en combinación con modelos físicos precisos acabó por crear su propio subcampo llamado visión basada en la física.
 
-Los algoritmos de tracking mejoraron, incluidos los de tracking por contorno usando contornos activos, así como los basados en intensidad. Normalmente se aplicaron al tracking de caras o de cuerpos completos.
+Los algoritmos de \textit{tracking} mejoraron, incluidos los de tracking por contorno usando contornos activos, así como los basados en intensidad. Normalmente se aplicaron al seguimiento de caras o de cuerpos completos.
 
 La segmentación de imagen fue un tema de investigación activo, y produjo técnicas como \textit{mean shift}. Comienzan a aparecer técnicas de aprendizaje basadas en la estadística, de las que surgen los primeros algoritmos de reconocimiento de caras.
 
@@ -59,9 +59,9 @@ El avance más notable en esta década fue la interacción con la computación g
 
 Durante la \textbf{década de los 2000} continuó la interacción entre el campo de la visión y el de los gráficos. Una tendencia de esta década fue la proliferación de técnicas basadas en \textit{features} para el reconocimiento de objetos. Estas técnicas también dominan otras tareas del reconocimiento como el reconocimiento de la escena o de localización.
 
-Otra tendencia, que sigue presente en la actualidad, es la aplicación de técnicas de \textit{machine learning} a problemas de visión artificial, como es el uso de redes neuronales convolucionales. El crecimiento de esta técnica coincide con la gran disponibilidad en Internet de enormes cantidades de datos etiquetados, así como la multiplicación de la capacidad de cómputo, lo que facilitó las tareas de aprendizaje \citep{book:szeliski}.
+Otra tendencia, que sigue presente en la actualidad, es la aplicación de técnicas de \textit{machine learning} a problemas de visión artificial, como es el uso de redes neuronales convolucionales. El crecimiento de esta técnica coincide con la gran disponibilidad en Internet de enormes cantidades de datos etiquetados, así como la multiplicación de la capacidad de cómputo, lo que facilitó las tareas de aprendizaje.
 
-Al igual que en el campo del \textit{machine learning}, las redes neuronales han cobrado una importancia vital, y se han logrado verdaderamente grandes avances haciendo uso de ellas. Un ejemplo del estado actual del campo es el trabajo de \citet{art:2017arXiv170306870H} que muestra el avance en segmentación de imagen que se ha logrado usando ANN.
+Al igual que en el campo del \textit{machine learning}, las redes neuronales han cobrado una importancia vital, y se ha logrado avances verdaderamente grandes haciendo uso de ellas. Un ejemplo del estado actual del campo es el trabajo de \citet{art:2017arXiv170306870H} que muestra el avance en segmentación de imagen que se ha logrado usando ANN.
 
 También hay avances en la conducción autónoma usando visión por computador, de hecho NVIDIA tiene actualmente en funcionamiento una plataforma para coches autónomos llamada NVIDIA DRIVE. Dicha plataforma, nuevamente, hace uso de técnicas de deep learning para detectar obstáculos, señales, etc.
 

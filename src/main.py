@@ -71,8 +71,8 @@ def main():
                         ball_count[str(previous_value[2])] = consecutive_count
                     consecutive_count = 1
                 else:
-                    consecutive_count = 1 # If this frames has no ball, restart the count
-            elif previous_key + 1 != int(key):                # Current key is from another play, try to find ball in previous play
+                    consecutive_count = 1  # If this frames has no ball, restart the count
+            elif previous_key + 1 != int(key):     # Current key is from another play, try to find ball in previous play
                 loaded_data = find_ball(ball_count, loaded_data)
                 ball_count = {}
             previous_key = int(key)

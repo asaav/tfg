@@ -6,9 +6,9 @@ El seguimiento se puede realizar por \textit{tracking}, sustracción de fondo, o
 
 Una vez resuelta la parte del seguimiento, el siguiente objetivo sería registrar las posiciones detectadas a un fichero de salida en formato CSV, mediante el cual se puedan hacer análisis de distintas métricas del juego.
 
-El desarrollo se va a centrar, como he ido aclarando, en una aplicación en Python utilizando OpenCV y PyQt para la parte de interfaz gráfica. De cara a la construcción del sistema, la estrategia a seguir es desarrollar separadamente sus partes y posteriormente integrarlas para que funcionen de manera conjunta.
+El desarrollo se va a centrar, como se ha ido aclarando, en una aplicación en Python utilizando OpenCV y PyQt para la parte de interfaz gráfica. De cara a la construcción del sistema, la estrategia a seguir es desarrollar separadamente sus partes y posteriormente integrarlas para que funcionen de manera conjunta.
 
-A continuación, detallaré estas partes y cómo se ha resuelto su implementación. Las partes principales del sistema son: sustracción de fondo, seguimiento (\textit{tracking}), interfaz gráfica y métodos de consistencia temporal.
+A continuación, detallaremos estas partes y cómo se ha resuelto su implementación. Las partes principales del sistema son: sustracción de fondo, seguimiento (\textit{tracking}), interfaz gráfica y métodos de consistencia temporal.
 
 \subsection{Sustracción de fondo}
 \label{sec:subtractors}
@@ -76,7 +76,7 @@ Una novedad de MOG respecto a su predecesor es la capacidad para discernir las s
 \label{fig:MOG}
 \end{figure}
 
-El funcionamiento de MOG en un frame puede verse en la figura \ref{fig:MOG}. Como puede verse, el algoritmo detecta los cuerpos con cierto nivel de fidelidad, aunque en algunos momentos puede ser especialmente sensible a una jugadora estática. Por otro lado, la detección de las sombras no es en absoluto perfecta, y no en pocas ocasiones se marcan partes de la sombra como componentes de la imagen. El rendimiento es correcto, no se aprecian ralentizaciones graves, como ya comprobaremos más adelante en la tabla \ref{fig:fps}.
+El funcionamiento de MOG en un frame puede verse en la figura \ref{fig:MOG}. Como puede verse, el algoritmo detecta los cuerpos con cierto nivel de fidelidad, aunque en algunos momentos puede ser especialmente sensible a una jugadora estática. Por otro lado, la detección de las sombras no es en absoluto perfecta, y no en pocas ocasiones se marcan partes de la sombra como componentes de la imagen. El rendimiento es correcto, no se aprecian ralentizaciones graves, como ya comprobaremos más adelante en los resultados mostrados en la Figura \ref{fig:fps}.
 
 \subsubsection*{MOG2}
 MOG2 es un algoritmo propuesto en los trabajos \cite{art:Zivkovic1} y \cite{art:Zivkovic2} de Z. Zivkovic. Tiene el mismo fundamento que el anterior método, estima el fondo mediante K gaussianas, haciendo uso nuevamente de un modelo semiparametrizado. 
@@ -114,7 +114,7 @@ A partir de aquí se utiliza inferencia bayesiana para calcular la probabilidad 
 
 Siendo $p(f|B) = f_{ij}(k)^T\hat{H}_{ij}(k)$, $p(f|F) = 1 - p(f|B)$, $p(F)$ un parámetro constante que afecta a la sensibilidad del algoritmo y $p(B) = 1 - p(F)$. Una vez calculado $p(B|f)$ para cada pixel, obtenemos una imagen $P(k)$ a la que se le aplican una serie de transformaciones morfológicas de manera que se eliminen las posibles pequeñas formas anómalas que puedan detectarse y las componentes de la imagen aparezcan conectadas. Posteriormente, se aplica un umbral a la imagen para generar a partir de ella una imagen en binario que servirá como máscara y será la salida del sustractor.
 
-Por último, se debe actualizar el histograma que se usa como modelo de fondo de manera que se adapte a posibles cambios en la escena. Si un pixel está marcado como frente de la escena, el histograma para él no se actualiza. Si no, si la característica $f_{ij}(k)$ tiene peso 0 en el histograma y se ha excedido la constante $F_max$, se debe eliminar alguna característica del histograma, la de menor peso. A continuación se actualiza el histograma con la nueva característica a añadir: $H_{ij}(k+1)=(1-\alpha)H_{ij}(k)+\alpha f_{ij}(k)$ siendo $\alpha$ el parámetro de adaptación (\textit{learning rate}) del algoritmo, y cuanto más grande sea, antes se eliminan las observaciones anteriores.
+Por último, se debe actualizar el histograma que se usa como modelo de fondo de manera que se adapte a posibles cambios en la escena. Si un pixel está marcado como frente de la escena, el histograma para él no se actualiza. Si no, si la característica $f_{ij}(k)$ tiene peso 0 en el histograma y se ha excedido la constante $F_{max}$, se debe eliminar alguna característica del histograma, la de menor peso. A continuación se actualiza el histograma con la nueva característica a añadir: $H_{ij}(k+1)=(1-\alpha)H_{ij}(k)+\alpha f_{ij}(k)$ siendo $\alpha$ el parámetro de adaptación (\textit{learning rate}) del algoritmo, y cuanto más grande sea, antes se eliminan las observaciones anteriores.
 
 \begin{figure}
 \begin{subfigure}{.5\textwidth}
@@ -135,7 +135,7 @@ Por último, se debe actualizar el histograma que se usa como modelo de fondo de
 
 En cuanto al desempeño del algoritmo, en la figura \ref{fig:GMG} podemos ver que es extremadamente sensible al ruido de la cámara, cosa que hace que la detección de objetos no sea todo lo estable que cabría desear. Esta inestabilidad hace que constantemente se pierdan de un frame a otro algunos de los contornos, y haya que asignarles etiquetas nuevas, lo que explica que en la imagen haya etiquetas tan altas (hablaremos sobre ellas con más profundidad en secciones posteriores). Se aprecian algunos fallos en la detección de sombras, por ejemplo, los de la jugadora más arriba a la derecha y el balón en la imagen. 
 
-El rendimiento no es especialmente bueno, se puede apreciar que cuando el ruido de imagen es muy grande y se detectan muchos contornos falsos, el funcionamiento es extremadamente lento. Además, durante los frames de inicialización, también se notan algunos bajones de FPS (que veremos en la tabla \ref{fig:fps}). Con todo, estos problemas no son especialmente serios y un reescalado de la imagen bastaría para paliarlos.
+El rendimiento no es especialmente bueno, se puede apreciar que cuando el ruido de imagen es muy grande y se detectan muchos contornos falsos, el funcionamiento es extremadamente lento. Además, durante los frames de inicialización, también se notan algunos bajones de FPS (que veremos en la Figura \ref{fig:fps}). Con todo, estos problemas no son especialmente serios y un reescalado de la imagen bastaría para paliarlos.
 
 
 \subsubsection*{CNT}
@@ -221,7 +221,7 @@ La base del funcionamiento algoritmo es sencilla: dados unos datos etiquetados, 
 
 Dado que en el caso de la sustracción de fondo no tenemos datos etiquetados a priori, se debe realizar una primera estimación, por lo tanto, durante un número de frames iniciales $n$, se guardan las $n$ ternas RGB que actuarán como el modelo de fondo inicial. A continuación, se calculan las $k$ distancias de cada pixel nuevo a los $n$ anteriores y dependiendo de las distancias, se estima la probabilidad de ser fondo, si la distancia es pequeña, o no, en caso de que la distancia sea mayor. El modelo de fondo se va actualizando, sustituyendo vectores antiguos por vectores nuevos que se consideran fondo.
 
-El algoritmo, en lugar de fijar un tamaño fijo al kernel, trata de adaptarlo para cada pixel de la imagen, con lo que para cada punto nuevo, se calculan los $k$ vecinos más cercanos de los que conformaban la muestra inicial. Si la distancia respecto al más lejano de ellos es muy pequeña, entonces la densidad de probabilidad en esa zona de la imagen es grande, luego es más probable que ese pixel sea parte del fondo\cite{art:Zivkovic2}.
+El algoritmo, en lugar de fijar un tamaño fijo al kernel, trata de adaptarlo para cada pixel de la imagen, con lo que para cada punto nuevo, se calculan los $k$ vecinos más cercanos de los que conformaban la muestra inicial. Si la distancia respecto al más lejano de ellos es muy pequeña, entonces la densidad de probabilidad en esa zona de la imagen es grande, luego es más probable que ese pixel sea parte del fondo \cite{art:Zivkovic2}.
 
 \subsubsection*{Operaciones posteriores}
 
@@ -242,7 +242,7 @@ El algoritmo, en lugar de fijar un tamaño fijo al kernel, trata de adaptarlo pa
 \label{fig:nms}
 \end{figure}
 
-La primera de ellas es la \textbf{supresión de no máximos}. En ciertos momentos del vídeo, puede que no se detecte una forma de manera completa, sino que se detecta el contorno y ciertas partes separadas. Cuando esto ocurre, la imagen de salida tiene la forma que vemos en la figura \ref{fig:nms1a} donde pueden verse varios cuadrados redundantes que podrían englobarse en uno más grande. Tras aplicar la supresión de no máximos, la imagen queda como en la figura \ref{fig:nms1b}, donde puede verse que los cuadrados contenidos dentro de otros han sido suprimidos.
+La primera de ellas es la \textbf{supresión de no máximos}. En ciertos momentos del vídeo, puede que no se detecte una forma de manera completa, sino que se detecta el contorno y ciertas partes separadas. Cuando esto ocurre, la imagen de salida tiene la forma que vemos en la figura \ref{fig:nms1a}, donde pueden verse varios cuadrados redundantes que podrían englobarse en uno más grande. Tras aplicar la supresión de no máximos, la imagen queda como en la figura \ref{fig:nms1b}, donde puede verse que los cuadrados contenidos dentro de otros han sido suprimidos.
 
 La segunda operación es el \textbf{test de circularidad}, el cual nos sirve para saber cuál de las formas detectadas en la imagen es el balón. Para ello, calculamos el coeficiente de circularidad $C =  \frac{4*\pi*\acute{a}rea}{per\acute{\imath}metro^2}$. Cuanto mayor sea $C$, mayor probabilidad de que la forma sea la de un círculo, es decir, la del balón. En un frame cualquiera, la forma cuyo coeficiente $C$ tenga un valor mayor de 0.6 y sea el mayor de todos los contornos detectados, se marcará en rojo en la imagen de salida, mientras que el resto se marcarán en verde.
 
@@ -307,10 +307,10 @@ CNT es también otro descarte a pesar de estar entre los tres más rápidos, deb
 \label{fig:modelos}
 \end{figure}
 
-Con lo cual, nos toca decidir entre MOG2 y KNN, que son los dos candidatos que nos quedan atendiendo a la velocidad de ambos. Ambos tienen una detección muy parecida, pero MOG2 es ligeramente superior a la hora de estimar el modelo de fondo (En la figura \ref{fig:modelos} se puede ver que el modelo de MOG2 es más limpio). También es mejor MOG2 en ciertas ocasiones a la hora de detectar sombras. Por estos motivos, sumados a que la velocidad no es un requisito principal del trabajo, se usará MOG2 como método principal para sustracción de fondo, si bien el software final permite el uso de cualquier otro método de los expuestos a fin de mantener todas las posibilidades a disposición del usuario.
+Con lo cual, nos toca decidir entre MOG2 y KNN, que son los dos candidatos que nos quedan atendiendo a la velocidad de ambos. Ambos tienen una detección muy parecida, pero MOG2 es ligeramente superior a la hora de estimar el modelo de fondo (en la figura \ref{fig:modelos} se puede ver que el modelo de MOG2 es más limpio). También es mejor MOG2 en ciertas ocasiones a la hora de detectar sombras. Por estos motivos, sumados a que la velocidad no es un requisito principal del trabajo, se usará MOG2 como método principal para sustracción de fondo, si bien el software final permite el uso de cualquier otro método de los expuestos a fin de mantener todas las posibilidades a disposición del usuario.
 
 \subsection{Seguimiento}
-Otra manera mediante la que podemos detectar a las jugadoras y al balón es el seguimiento o \textit{tracking}. Cabe aclarar que no necesariamente es excluyente el uso de esta técnica con el de sustracción de fondo, sino que puede servir para complementar a esta en ciertos objetos que el sustractor de fondo no detecte correctamente.
+Otra manera mediante la que podemos detectar a las jugadoras y al balón es el seguimiento o \textit{tracking}. Cabe aclarar que no necesariamente es excluyente el uso de esta técnica con la de sustracción de fondo, sino que puede servir para complementar a esta en ciertos objetos que el sustractor de fondo no detecte correctamente.
 
 Nuevamente, OpenCV pone a nuestra disposición 2 algoritmos de seguimiento: Mean Shift y CAMShift. El módulo colaborativo añade otros cuantos más. Al igual que en el apartado anterior, se usará la programación orientada a objetos para crear una jerarquía de clases que haga sencilla la selección del algoritmo a usar, proporcionando una interfaz común al programar.
 
@@ -335,7 +335,7 @@ Mean Shift es una técnica de análisis de espacios de características no param
     \label{fig:clustering}
 \end{figure}
 
-El algoritmo de Mean Shift, como se ha dicho, tiene como objetivo la búsqueda de máximos de una función de densidad dada. Para hacerlo, se calcula de manera iterativa a partir de una estimación $x$, conocida como ventana. Una vez proporcionada una ventana al algoritmo, se calculan los pesos de todos los puntos de alrededor de $x$ mediante una función $K$, que normalmente suele tener la forma $K(x_i-x) = e^{-c||x_i-x||^2}$. La media pesada de la densidad en la ventana es:
+El algoritmo de Mean Shift, como se ha dicho, tiene como objetivo la búsqueda de máximos de una función de densidad dada. Para hacerlo, se calcula de manera iterativa a partir de una estimación $x$, conocida como ventana. Una vez proporcionada una ventana al algoritmo, se calculan los pesos de todos los puntos de alrededor de $x$ mediante una función $K$, que normalmente suele tener la forma $K(x_i-x) = e^{-c||x_i-x||^2}$. La media ponderada de la densidad en la ventana es:
 \[
   m(x) = \frac{\sum_{x_i\in N(x)}K(x_i-x)x_i}{\sum_{x_i\in N(x)}K(x_i-x)}
 \]
@@ -353,7 +353,7 @@ Ahora bien, en el caso del seguimiento, el algoritmo se adapta a esta aplicació
 \end{figure}
 
 
-Entre las ventajas de Mean Shift se encuentra su capacidad para manejar y adaptarse a distintos espacios de características, además de, en el caso de la segmentación, que no es necesario dar un número de clusters de datos, sino que el algoritmo es capaz de hallarlos por sí mismo. Sin embargo, es un algoritmo más bien lento aunque fácilmente paralelizable, y, en el caso del seguimiento, dado que el tamaño de la ventana es constante, puede tener problemas en caso de que algún objeto de la escena cambie de tamaño (se acerque o bien se aleje, como veremos en la figura \ref{fig:ejemplos1a})
+Entre las ventajas de Mean Shift se encuentra su capacidad para manejar y adaptarse a distintos espacios de características, además de, en el caso de la segmentación, que no es necesario dar un número de clusters de datos, sino que el algoritmo es capaz de hallarlos por sí mismo. Sin embargo, es un algoritmo más bien lento aunque fácilmente paralelizable, y, en el caso del seguimiento, dado que el tamaño de la ventana es constante, puede tener problemas en caso de que algún objeto de la escena cambie de tamaño (se acerque o bien se aleje, como veremos en la figura \ref{fig:ejemplos1a}).
 
 \subsubsection*{CAMShift}
 
@@ -487,9 +487,9 @@ FRAME NUMBER;POSITION;ID;BALL
 Como hemos dicho, este CSV no se usa en el programa, sino que es una salida alternativa para hacer análisis de datos de forma externa, por lo que no necesitamos un mecanismo en el software que se encargue de leer los datos.
 
 \subsubsection*{Preprocesamiento de los datos}
-Una de las heurísticas principales que vamos a utilizar para inferir la posición real del balón en cada frame es considerar como balón cualquier identificador que se mantenga constante en el tiempo, esto es, que se mantenga durante un número dado de frames seguido. La razón detrás de esto es que, aunque una jugadora puede ser marcada como balón en un frame aislado, normalmente se mueve de manera que no mantiene demasiado tiempo una forma redonda, mientras que la pelota, lógicamente, es redonda de manera constante.
+Una de las heurísticas principales que vamos a utilizar para inferir la posición real del balón en cada frame es considerar como balón cualquier identificador que se mantenga constante en el tiempo, esto es, que se mantenga durante un número dado de frames seguido. La razón detrás de esto es que, aunque una jugadora puede ser marcada como balón en un frame aislado, normalmente se mueve, de manera que no mantiene demasiado tiempo una forma redonda, mientras que la pelota, obviamente, es redonda de manera constante.
 
-Dado que nos vamos a basar en frames consecutivos, cualquier momento del vídeo en el que un contorno marcado como balón se pierda solamente durante un frame, nos penaliza mucho a la hora de aplicar la consistencia temporal. Para solucionar este contratiempo, recorremos la lista de tuplas. Si para algún frame el identificador del balón es el mismo en los frames anterior y posterior, mientras que en este frame es otro distinto, entonces consideramos la ID de los frames vecinos en lugar de la que se encuentre marcada en ese frame. De esta manera logramos dotar de una cierta continuidad a todos los ID que sean balón.
+Dado que nos vamos a basar en frames consecutivos, cualquier momento del vídeo en el que un contorno marcado como balón se pierda solamente durante un frame, nos penaliza mucho a la hora de aplicar la consistencia temporal. Para solucionar este contratiempo, recorremos la lista de tuplas. Si para algún frame el identificador del balón es el mismo en los frames anterior y posterior, mientras que en este frame es otro distinto, entonces consideramos la ID de los frames vecinos en lugar de la que se encuentre marcada en ese frame. De esta manera logramos dotar de una cierta continuidad a todos los ID que se identifican como balón.
 
 Una vez hecho esto se recorre todos los frames de cada jugada, llevando un conteo de las veces consecutivas que cada identificador ha sido marcado como balón, quedándonos con la mejor marca para cada identificador. Tras esto, si el máximo número de veces consecutivas que un frame está marcado como balón es mayor de 3 frames, consideramos dicho identificador como balón. 
 
@@ -530,7 +530,7 @@ En caso de que más de un identificador cumpla todas las condiciones anteriores,
 
 En la figura \ref{fig:cons} podemos ver la diferencia de resultados entre la primera pasada y tras aplicar el algoritmo descrito, la pelota aparece marcada correctamente, mientras que en el frame original en la primera pasada no había ningún contorno marcado como pelota. Además, como en la segunda pasada no necesitamos ejecutar en cada frame la actualización del sustractor de fondo ya que los datos proceden de la pasada anterior, se puede apreciar una mejora significativa de la cifra de FPS.
 
-La tabla \ref{tab:3} presenta los siguientes datos para tres jugadas: número de frames de cada jugada, id del balón, número de frames en que dicha id está marcada como balón antes de aplicar el algoritmo y después, así como el porcentaje de frames en los que el balón se encuentra localizado antes y después de aplicar el algoritmo.
+La tabla \ref{tab:3} presenta los siguientes datos para tres jugadas: número de frames de cada jugada, ID del balón, número de frames en que dicha ID está marcada como balón antes de aplicar el algoritmo y después, así como el porcentaje de frames en los que el balón se encuentra localizado antes y después de aplicar el algoritmo.
 
 
 \begin{table}
@@ -549,7 +549,7 @@ La tabla \ref{tab:3} presenta los siguientes datos para tres jugadas: número de
 
 Como puede verse, el algoritmo propuesto es bastante efectivo a la hora de localizar el balón en la escena a partir de los datos del sustractor. Hemos sido capaces de encontrar el balón hasta en un $56,20\%$ más de ocasiones que en la salida original. 
 
-Hay que tener en cuenta que el $100\%$ de frames con balón es inalcanzable, ya que hay algunos frames de las jugadas en los que el balón desaparece por solapamiento con una jugadora, por ejemplo. Un coeficiente mejor para determinar el grado de mejora tras aplicar el algoritmo sería el porcentaje de frames en los que se detecta el balón respecto al número total de frames en los que aparece el mismo. Para lograr este último dato necesitamos revisar el vídeo frame a frame de manera manual para crear una verdad de fondo que nos sirva para comparar. Este sería un trabajo demasiado extensivo, por lo que nos conformaremos con las medidas empleadas.
+Hay que tener en cuenta que el $100\%$ de frames con balón es inalcanzable, ya que hay numerosos frames de las jugadas en los que el balón desaparece por solapamiento con alguna(s) jugadora(s), por ejemplo. Un coeficiente mejor para determinar el grado de mejora tras aplicar el algoritmo sería el porcentaje de frames en los que se detecta el balón respecto al número total de frames en los que aparece el mismo. Para lograr este último dato necesitamos revisar el vídeo frame a frame de manera manual para crear una verdad de fondo que nos sirva para comparar. Este sería un trabajo demasiado extensivo, por lo que nos conformaremos con las medidas empleadas.
 
 
 \subsection{Descripción del software final}
